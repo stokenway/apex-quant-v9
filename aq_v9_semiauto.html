@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQ V9 — Semi-Auto</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600;700&family=Bebas+Neue&display=swap');
+:root{
+  --g:#d4a017;--gd:#7a5a0a;--bg:#060608;--bg2:#0a0a10;--bg3:#0f0f18;
+  --b1:#18182a;--b2:#22223a;--gr:#1db954;--rd:#e63946;--or:#f4820a;
+  --tx:#c0c0d0;--mu:#40405a;--mo:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh;padding:14px;font-size:11px;line-height:1.5}
+.w{max-width:600px;margin:0 auto}
+
+/* HEADER */
+.hdr{margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--b2);display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.hdr-l h1{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--g);letter-spacing:4px;line-height:1}
+.hdr-l span{font-size:9px;color:var(--mu);letter-spacing:3px;text-transform:uppercase}
+.hdr-r{text-align:right;font-size:9px;color:var(--mu);letter-spacing:1px}
+.mode-badge{display:inline-block;background:rgba(212,160,23,.1);border:1px solid var(--gd);color:var(--g);font-size:9px;letter-spacing:2px;padding:2px 8px;margin-top:3px}
+
+/* SECTION */
+.sec{background:var(--bg2);border:1px solid var(--b1);padding:12px;margin-bottom:8px}
+.sec-t{font-size:9px;color:var(--gd);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.sec-badge{font-size:8px;color:var(--mu);border:1px solid var(--b2);padding:1px 6px;letter-spacing:1px}
+.sec-badge.auto{color:var(--gr);border-color:rgba(29,185,84,.3)}
+.sec-badge.manual{color:var(--or);border-color:rgba(244,130,10,.3)}
+
+/* KEY ROWS */
+.kr{display:flex;margin-bottom:6px}
+.kr-lbl{font-size:9px;color:var(--mu);letter-spacing:1px;min-width:52px;padding-top:8px}
+.kr-inp{flex:1;background:var(--bg);border:1px solid var(--b2);border-right:none;color:var(--tx);padding:7px 8px;font-family:var(--mo);font-size:11px;outline:none;transition:border-color .12s}
+.kr-inp:focus{border-color:var(--g)}
+.kr-inp.ok{border-color:rgba(29,185,84,.4);color:var(--gr)}
+.eyeb{background:var(--bg3);border:1px solid var(--b2);color:var(--mu);padding:7px 8px;cursor:pointer;font-size:10px}
+.eyeb:hover{color:var(--g)}
+.saveb{width:100%;background:transparent;border:1px solid var(--gd);color:var(--g);padding:6px;font-family:var(--mo);font-size:9px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;margin-top:4px;transition:background .12s}
+.saveb:hover{background:rgba(212,160,23,.06)}
+.saved-ok{font-size:9px;color:var(--gr);margin-top:4px;display:none}
+
+/* ASSET */
+.ag{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.ab{background:var(--bg);border:1px solid var(--b1);color:var(--mu);padding:8px 2px;font-family:var(--mo);font-size:9px;cursor:pointer;text-align:center;letter-spacing:1px;transition:all .1s}
+.ab:hover{border-color:var(--gd);color:var(--g)}
+.ab.on{border-color:var(--g);background:rgba(212,160,23,.06);color:var(--g);font-weight:600}
+
+/* GRID FIELDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
+.fld label{font-size:8px;color:var(--mu);letter-spacing:1px;display:block;margin-bottom:3px;text-transform:uppercase}
+.fld input{width:100%;background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:7px 7px;font-family:var(--mo);font-size:11px;outline:none;transition:border-color .12s}
+.fld input:focus{border-color:var(--g)}
+.fld input.auto-ok{border-color:rgba(29,185,84,.35);color:var(--gr)}
+.fld input[readonly]{color:var(--gr);cursor:default}
+
+/* F1 TOGGLE */
+.f1-row{display:flex;gap:6px;align-items:stretch;margin-bottom:6px}
+.f1-btn{flex:1;background:var(--bg);border:1px solid var(--b2);color:var(--mu);padding:8px;font-family:var(--mo);font-size:10px;cursor:pointer;text-align:center;letter-spacing:2px;transition:all .1s}
+.f1-btn:hover{border-color:var(--gd)}
+.f1-btn.f1-pass{border-color:var(--gr);background:rgba(29,185,84,.08);color:var(--gr)}
+.f1-btn.f1-fail{border-color:var(--rd);background:rgba(230,57,70,.08);color:var(--rd)}
+.f1-note{flex:2;background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:7px 8px;font-family:var(--mo);font-size:10px;outline:none}
+.f1-note:focus{border-color:var(--g)}
+
+/* RUN */
+.runb{width:100%;background:var(--g);border:none;color:var(--bg);padding:14px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:4px;cursor:pointer;margin-bottom:8px;transition:opacity .12s}
+.runb:disabled{opacity:.3;cursor:not-allowed}
+.runb:not(:disabled):hover{opacity:.88}
+
+/* PROGRESS */
+.prog{display:none;margin-bottom:8px}
+.pbg{height:1px;background:var(--b2);margin-bottom:5px}
+.pb{height:100%;background:var(--g);width:0%;transition:width .3s}
+.pst{font-size:9px;color:var(--gd);letter-spacing:1px;min-height:12px}
+
+/* PILLS */
+.pills{display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.pill{font-size:8px;letter-spacing:1px;padding:2px 7px;border:1px solid;text-transform:uppercase}
+.p-ok{border-color:rgba(29,185,84,.4);color:var(--gr)}
+.p-er{border-color:rgba(230,57,70,.4);color:var(--rd)}
+.p-wa{border-color:rgba(244,130,10,.4);color:var(--or)}
+
+/* OUTPUT */
+.out{display:none}
+.out-t{font-size:9px;color:var(--gd);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px}
+.out-box{background:var(--bg);border:1px solid rgba(29,185,84,.2);padding:12px;font-size:10px;line-height:1.9;white-space:pre-wrap;word-break:break-word;color:#78c878;max-height:320px;overflow-y:auto;margin-bottom:6px}
+.copyb{width:100%;background:rgba(29,185,84,.05);border:1px solid rgba(29,185,84,.25);color:var(--gr);padding:10px;font-family:var(--mo);font-size:9px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;transition:background .12s}
+.copyb:hover{background:rgba(29,185,84,.1)}
+
+.errb{background:rgba(230,57,70,.04);border:1px solid rgba(230,57,70,.2);padding:10px;font-size:10px;color:var(--or);line-height:1.7;margin-bottom:8px;display:none}
+.foot{font-size:8px;color:#1a1a28;text-align:center;padding:10px 0 2px}
+
+@media(max-width:380px){.ag{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="w">
+
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>APEX QUANT V9</h1>
+    <span>Module 0 Collector</span>
+  </div>
+  <div class="hdr-r">
+    <div>Apify · FRED · MT5</div>
+    <div class="mode-badge">SEMI-AUTO</div>
+  </div>
+</div>
+
+<!-- CLÉS -->
+<div class="sec">
+  <div class="sec-t">// Clés API <span class="sec-badge">Sauvegardées localement</span></div>
+  <div class="kr">
+    <span class="kr-lbl">APIFY</span>
+    <input type="password" class="kr-inp" id="k-ap" placeholder="apify_api_..." autocomplete="off">
+    <button class="eyeb" onclick="tv('k-ap')">👁</button>
+  </div>
+  <div class="kr">
+    <span class="kr-lbl">FRED</span>
+    <input type="password" class="kr-inp" id="k-fr" placeholder="fred key..." autocomplete="off">
+    <button class="eyeb" onclick="tv('k-fr')">👁</button>
+  </div>
+  <button class="saveb" onclick="saveKeys()">💾 Sauvegarder les clés</button>
+  <div class="saved-ok" id="sv-ok">✅ Clés sauvegardées</div>
+</div>
+
+<!-- ACTIF -->
+<div class="sec">
+  <div class="sec-t">// Actif</div>
+  <div class="ag">
+    <button class="ab on" data-a="XAUUSD" onclick="pick(this)">XAUUSD</button>
+    <button class="ab" data-a="BTCUSD"  onclick="pick(this)">BTCUSD</button>
+    <button class="ab" data-a="EURUSD"  onclick="pick(this)">EURUSD</button>
+    <button class="ab" data-a="GBPUSD"  onclick="pick(this)">GBPUSD</button>
+    <button class="ab" data-a="USDJPY"  onclick="pick(this)">USDJPY</button>
+    <button class="ab" data-a="NAS100"  onclick="pick(this)">NAS100</button>
+    <button class="ab" data-a="US30"    onclick="pick(this)">US30</button>
+    <button class="ab" data-a="ETHUSD"  onclick="pick(this)">ETHUSD</button>
+  </div>
+</div>
+
+<!-- DONNÉES MANUELLES MT5 -->
+<div class="sec">
+  <div class="sec-t">// Depuis MetaTrader 5 <span class="sec-badge manual">MANUEL</span></div>
+  <div class="g2">
+    <div class="fld"><label>Prix Live (Bid/Ask)</label><input type="number" id="m-price" placeholder="ex: 3321.50" step="0.01"></div>
+    <div class="fld"><label>ATR M15 (période 14)</label><input type="number" id="m-atr15" placeholder="ex: 8.5" step="0.01"></div>
+  </div>
+</div>
+
+<!-- FILTRE F1 -->
+<div class="sec">
+  <div class="sec-t">// Filtre F1 — FinancialJuice <span class="sec-badge manual">MANUEL</span></div>
+  <div class="f1-row">
+    <button class="f1-btn" id="f1-pass-btn" onclick="setF1(true)">✅ PASS</button>
+    <button class="f1-btn" id="f1-fail-btn" onclick="setF1(false)">❌ ÉCHOUÉ</button>
+    <input type="text" class="f1-note" id="f1-note" placeholder="Prochain event (ex: FOMC 14h30)">
+  </div>
+</div>
+
+<!-- DONNÉES AUTO APIFY (affichage) -->
+<div class="sec" id="auto-sec" style="display:none">
+  <div class="sec-t">// Données Apify <span class="sec-badge auto">AUTO</span></div>
+  <div class="g4">
+    <div class="fld"><label>Open J-1</label><input type="text" id="a-open" readonly></div>
+    <div class="fld"><label>High J-1</label><input type="text" id="a-high" readonly></div>
+    <div class="fld"><label>Low J-1</label> <input type="text" id="a-low"  readonly></div>
+    <div class="fld"><label>Close J-1</label><input type="text" id="a-close" readonly></div>
+  </div>
+  <div class="g4">
+    <div class="fld"><label>ATR Daily</label><input type="text" id="a-atrd" readonly></div>
+    <div class="fld"><label>DXY</label>      <input type="text" id="a-dxy"  readonly></div>
+    <div class="fld"><label>US10Y %</label>  <input type="text" id="a-us10y" readonly></div>
+    <div class="fld"><label>Régime ATR</label><input type="text" id="a-reg" readonly></div>
+  </div>
+</div>
+
+<button class="runb" id="run-btn" onclick="run()">▶ COLLECTER &amp; GÉNÉRER</button>
+
+<div class="prog" id="prog"><div class="pbg"><div class="pb" id="pb"></div></div><div class="pst" id="pst">...</div></div>
+<div class="errb" id="errb"></div>
+<div class="pills" id="pills"></div>
+
+<div class="out" id="out">
+  <div class="out-t">// Bloc à coller dans Claude / Gemini</div>
+  <div class="out-box" id="out-box"></div>
+  <button class="copyb" id="copyb" onclick="doCopy()">⎘ COPIER LE BLOC</button>
+</div>
+
+<div class="foot">Clés stockées localement · Jamais transmises hors des APIs concernées</div>
+</div>
+
+<script>
+const AM={
+  XAUUSD:{ticker:"GC=F", dxy:"DX-Y.NYB", fred:["DGS10","T10YIE"], label:"Gold / USD"},
+  BTCUSD:{ticker:null,   cg:"bitcoin",   dxy:"DX-Y.NYB", fred:[], label:"Bitcoin / USD"},
+  EURUSD:{ticker:"EURUSD=X", dxy:"DX-Y.NYB", fred:["DGS10"], label:"Euro / USD"},
+  GBPUSD:{ticker:"GBPUSD=X", dxy:"DX-Y.NYB", fred:["DGS10"], label:"GBP / USD"},
+  USDJPY:{ticker:"JPY=X",    dxy:"DX-Y.NYB", fred:["DGS10"], label:"USD / JPY"},
+  NAS100:{ticker:"NQ=F",     dxy:"DX-Y.NYB", fred:["DGS10"], label:"Nasdaq 100"},
+  US30:  {ticker:"YM=F",     dxy:"DX-Y.NYB", fred:["DGS10"], label:"Dow Jones"},
+  ETHUSD:{ticker:null,       cg:"ethereum",  dxy:"DX-Y.NYB", fred:[], label:"Ethereum / USD"},
+};
+const FRED_LBL={DGS10:"us10y",T10YIE:"realYield"};
+const SZ={COMPRESSÉ:{r:0.5,rr:"1:4"},NORMAL:{r:1.0,rr:"1:3"},VOLATILE:{r:0.5,rr:"1:2.5"},EXTRÊME:{r:0.0,rr:"NO TRADE"},INCONNU:{r:0.5,rr:"1:3"}};
+
+let sel="XAUUSD", f1State=null;
+let D={};
+
+const $=id=>document.getElementById(id);
+function tv(id){const e=$(id);e.type=e.type==="password"?"text":"password"}
+function pick(b){document.querySelectorAll(".ab").forEach(x=>x.classList.remove("on"));b.classList.add("on");sel=b.dataset.a}
+
+function setF1(pass){
+  f1State=pass;
+  $("f1-pass-btn").className="f1-btn"+(pass?" f1-pass":"");
+  $("f1-fail-btn").className="f1-btn"+(!pass?" f1-fail":"");
+}
+
+function saveKeys(){
+  const ap=$("k-ap").value.trim(), fr=$("k-fr").value.trim();
+  if(!ap||!fr){alert("Remplis les 2 clés.");return}
+  localStorage.setItem("aqv9_ap",ap);localStorage.setItem("aqv9_fr",fr);
+  ["k-ap","k-fr"].forEach(id=>$(id).classList.add("ok"));
+  $("sv-ok").style.display="block";setTimeout(()=>$("sv-ok").style.display="none",2500);
+}
+function loadKeys(){
+  const ap=localStorage.getItem("aqv9_ap"), fr=localStorage.getItem("aqv9_fr");
+  if(ap){$("k-ap").value=ap;$("k-ap").classList.add("ok")}
+  if(fr){$("k-fr").value=fr;$("k-fr").classList.add("ok")}
+}
+
+function setP(p,m){$("pb").style.width=p+"%";$("pst").textContent=m}
+function pill(t,c){const d=$("pills");d.style.display="flex";const p=document.createElement("div");p.className="pill p-"+c;p.textContent=t;d.appendChild(p)}
+function showErr(m){$("errb").style.display="block";$("errb").innerHTML=m}
+
+// ── APIFY CALL ────────────────────────────────────────────────────
+async function apifyRun(apKey, tickers){
+  // Start actor run
+  const start = await fetch(`https://api.apify.com/v2/acts/architjn~yahoo-finance/runs?token=${apKey}`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({tickers, period:"1d"})
+  });
+  if(!start.ok) throw new Error(`Apify start error: ${start.status}`);
+  const run = await start.json();
+  const runId = run.data?.id;
+  if(!runId) throw new Error("Apify: pas de runId retourné");
+
+  // Poll until finished (max 60s)
+  for(let i=0;i<20;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    const status = await fetch(`https://api.apify.com/v2/actor-runs/${runId}?token=${apKey}`);
+    const st = await status.json();
+    if(st.data?.status==="SUCCEEDED") break;
+    if(st.data?.status==="FAILED") throw new Error("Apify run échoué");
+  }
+
+  // Get dataset
+  const ds = await fetch(`https://api.apify.com/v2/actor-runs/${runId}/dataset/items?token=${apKey}`);
+  if(!ds.ok) throw new Error(`Apify dataset error: ${ds.status}`);
+  return await ds.json();
+}
+
+// ── ATR CALC ──────────────────────────────────────────────────────
+function calcATR(hist, period=14){
+  if(!hist||hist.length<period+1) return null;
+  const trs=[];
+  for(let i=1;i<hist.length;i++){
+    trs.push(Math.max(
+      hist[i].high - hist[i].low,
+      Math.abs(hist[i].high - hist[i-1].close),
+      Math.abs(hist[i].low  - hist[i-1].close)
+    ));
+  }
+  const s=trs.slice(-period).reduce((a,b)=>a+b,0);
+  return Math.round(s/period*100)/100;
+}
+
+function regLabel(m15,daily){
+  if(!m15||!daily) return"INCONNU";
+  const r=m15/(daily/32);
+  if(r<0.5)return"COMPRESSÉ";if(r<=1.5)return"NORMAL";if(r<=2.0)return"VOLATILE";return"EXTRÊME";
+}
+
+// ── FRED ──────────────────────────────────────────────────────────
+async function fredFetch(series,key){
+  try{
+    const r=await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${key}&file_type=json&sort_order=desc&limit=5&observation_start=2020-01-01`);
+    if(!r.ok) return null;
+    const d=await r.json();
+    const v=d.observations?.find(o=>o.value!==".");
+    return v?Math.round(parseFloat(v.value)*1000)/1000:null;
+  }catch(e){return null}
+}
+
+// ── MAIN RUN ──────────────────────────────────────────────────────
+async function run(){
+  const apKey=$("k-ap").value.trim(), frKey=$("k-fr").value.trim();
+  if(!apKey||!frKey){alert("Remplis les 2 clés API.");return}
+  if(f1State===null){alert("Indique le statut F1 (PASS ou ÉCHOUÉ).");return}
+  const price=parseFloat($("m-price").value)||null;
+  const atrM15=parseFloat($("m-atr15").value)||null;
+  if(!price){alert("Saisis le prix live depuis MT5.");return}
+  if(!atrM15){alert("Saisis l'ATR M15 depuis MT5.");return}
+
+  const btn=$("run-btn");
+  btn.disabled=true;btn.textContent="⏳ EN COURS...";
+  $("prog").style.display="block";
+  $("out").style.display="none";
+  $("errb").style.display="none";
+  $("pills").style.display="none";
+  $("pills").innerHTML="";
+  $("auto-sec").style.display="none";
+  setP(5,"Initialisation...");
+
+  const ts=new Date().toISOString().slice(0,19)+"Z";
+  const cfg=AM[sel];
+  D={sel,ts,price,atrM15,ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
+
+  try{
+    // 1. Apify Yahoo Finance
+    const tickers=[cfg.ticker||"GC=F", cfg.dxy].filter(Boolean);
+    setP(15,"Apify — démarrage du run...");
+    const apData=await apifyRun(apKey, tickers);
+    setP(60,"Apify — parsing des données...");
+
+    // Parse main ticker
+    const main=apData.find(d=>d.ticker===tickers[0]||d.symbol===tickers[0]);
+    if(main?.history?.data?.length>0){
+      const hist=main.history.data;
+      const last=hist[hist.length-1];
+      const prev=hist.length>1?hist[hist.length-2]:null;
+      D.ohlcD1={
+        open: Math.round((prev?.open||last.open)*100)/100,
+        high: Math.round((prev?.high||last.high)*100)/100,
+        low:  Math.round((prev?.low||last.low)*100)/100,
+        close:Math.round((prev?.close||last.close)*100)/100,
+      };
+      D.atrDaily=calcATR(hist);
+      D.reg=regLabel(atrM15, D.atrDaily);
+      D.sz=SZ[D.reg]||SZ["INCONNU"];
+      $("a-open").value=D.ohlcD1.open||"N/A";
+      $("a-high").value=D.ohlcD1.high||"N/A";
+      $("a-low").value=D.ohlcD1.low||"N/A";
+      $("a-close").value=D.ohlcD1.close||"N/A";
+      $("a-atrd").value=D.atrDaily||"N/A";
+      $("a-reg").value=D.reg;
+      ["a-open","a-high","a-low","a-close","a-atrd","a-reg"].forEach(id=>$(id).classList.add("auto-ok"));
+      pill("OHLC ✓","ok");pill(`ATR D ${D.atrDaily}`,"ok");pill(`Régime ${D.reg}`,D.reg==="EXTRÊME"?"er":D.reg==="VOLATILE"?"wa":"ok");
+    } else {
+      pill("OHLC N/A","er");D.ohlcD1={open:"N/A",high:"N/A",low:"N/A",close:"N/A"};
+    }
+
+    // Parse DXY
+    const dxyD=apData.find(d=>d.ticker===cfg.dxy||d.symbol===cfg.dxy);
+    if(dxyD?.stock_info?.previous_close){
+      D.dxy=Math.round(parseFloat(dxyD.stock_info.previous_close)*1000)/1000;
+      $("a-dxy").value=D.dxy;$("a-dxy").classList.add("auto-ok");
+      pill(`DXY ${D.dxy}`,"ok");
+    } else pill("DXY N/A","wa");
+
+    $("auto-sec").style.display="block";
+
+    // 2. FRED
+    setP(75,"FRED — macro US...");
+    if(cfg.fred.length>0){
+      for(const sid of cfg.fred){
+        const val=await fredFetch(sid,frKey);
+        const lbl=FRED_LBL[sid]||sid;
+        if(val!==null){D[lbl]=val;pill(`${sid} ${val}%`,"ok")}
+        else pill(`${sid} N/A`,"wa");
+      }
+      $("a-us10y").value=(D.us10y||"N/A")+(D.us10y?"%":"");
+      if(D.us10y) $("a-us10y").classList.add("auto-ok");
+    }
+
+    // 3. Build
+    setP(95,"Génération du bloc V9...");
+    const bloc=buildBloc();
+    $("out-box").textContent=bloc;
+    $("out").style.display="block";
+    pill(f1State?"F1 PASS":"F1 ÉCHOUÉ",f1State?"ok":"er");
+    setP(100,"✅ Terminé");
+    setTimeout(()=>$("out").scrollIntoView({behavior:"smooth"}),200);
+
+  } catch(e){
+    setP(0,"Erreur");
+    showErr(`❌ ${e.message}<br><br>Vérifie ta clé Apify sur <a href="https://console.apify.com/account/integrations" target="_blank" style="color:var(--or)">console.apify.com</a>`);
+  }
+
+  btn.disabled=false;btn.textContent="▶ COLLECTER & GÉNÉRER";
+}
+
+function buildBloc(){
+  const sz=D.sz||SZ["INCONNU"];
+  const d1=D.ohlcD1||{};
+  let b=`[MODULE 0 — APEX QUANT V9 — ${D.ts}]\n`;
+  b+=`${"─".repeat(48)}\n`;
+  b+=`Actif    : ${AM[D.sel].label} (${D.sel})\n`;
+  b+=`Prix live: ${D.price} [MT5]\n\n`;
+  b+=`OHLC J-1 :\n`;
+  b+=`  O:${d1.open}  H:${d1.high}  L:${d1.low}  C:${d1.close} [APIFY-YF]\n\n`;
+  b+=`ATR M15   : ${D.atrM15} [MT5-CALC]\n`;
+  b+=`ATR Daily : ${D.atrDaily??'N/A'} [APIFY-CALC]\n`;
+  b+=`Régime    : ${D.reg} → Risque ${sz.r}% capital | RR min ${sz.rr}\n\n`;
+  b+=`DXY       : ${D.dxy??'N/A'} [APIFY-YF]\n`;
+  b+=`US10Y     : ${D.us10y??'N/A'}% [FRED]\n`;
+  b+=`Real Yield: ${D.realYield??'N/A'}% [FRED]\n\n`;
+  b+=`[MODULE 1 — FILTRE F1]\n`;
+  if(D.f1){
+    b+=D.f1Note?`✅ F1 PASS — Prochain: ${D.f1Note}\n`:`✅ F1 PASS — Aucun High Impact détecté\n`;
+  } else {
+    b+=`❌ F1 ÉCHOUÉ${D.f1Note?" — "+D.f1Note:""}\n`;
+  }
+  b+=`${"─".repeat(48)}\n`;
+  b+=`analyse ${D.sel} @${D.price}`;
+  return b;
+}
+
+function doCopy(){
+  const text=$("out-box").textContent, btn=$("copyb");
+  const ta=document.createElement("textarea");
+  ta.value=text;ta.style.cssText="position:fixed;top:0;left:0;opacity:.01;width:100px;font-size:12px;";
+  document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,99999);
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}
+  document.body.removeChild(ta);
+  if(!ok){try{navigator.clipboard.writeText(text).then(()=>flash(btn,"✅ COPIÉ!"));return}catch(e){}}
+  flash(btn,"✅ COPIÉ!");
+}
+function flash(b,m){const o=b.textContent;b.textContent=m;setTimeout(()=>b.textContent=o,2500)}
+window.onload=loadKeys;
+</script>
+</body>
+</html>

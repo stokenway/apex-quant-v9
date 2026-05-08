@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQ V9 — Manuel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600;700&family=Bebas+Neue&display=swap');
+:root{
+  --g:#d4a017;--gd:#7a5a0a;--bg:#060608;--bg2:#0a0a10;--bg3:#0f0f18;
+  --b1:#18182a;--b2:#22223a;--gr:#1db954;--rd:#e63946;--or:#f4820a;
+  --tx:#c0c0d0;--mu:#40405a;--mo:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh;padding:14px;font-size:11px;line-height:1.5}
+.w{max-width:600px;margin:0 auto}
+
+.hdr{margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid var(--b2);display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.hdr-l h1{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--g);letter-spacing:4px;line-height:1}
+.hdr-l span{font-size:9px;color:var(--mu);letter-spacing:3px;text-transform:uppercase}
+.hdr-r{text-align:right;font-size:9px;color:var(--mu);letter-spacing:1px}
+.mode-badge{display:inline-block;background:rgba(244,130,10,.08);border:1px solid rgba(244,130,10,.3);color:var(--or);font-size:9px;letter-spacing:2px;padding:2px 8px;margin-top:3px}
+
+.sec{background:var(--bg2);border:1px solid var(--b1);padding:12px;margin-bottom:8px}
+.sec-t{font-size:9px;color:var(--gd);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.sec-src{font-size:8px;color:var(--mu);letter-spacing:1px;border:1px solid var(--b2);padding:1px 6px}
+.sec-src.mt5{color:var(--or);border-color:rgba(244,130,10,.25)}
+.sec-src.fj{color:#4a9eff;border-color:rgba(74,158,255,.25)}
+.sec-src.tv{color:#9b59b6;border-color:rgba(155,89,182,.25)}
+
+.ag{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:0}
+.ab{background:var(--bg);border:1px solid var(--b1);color:var(--mu);padding:8px 2px;font-family:var(--mo);font-size:9px;cursor:pointer;text-align:center;letter-spacing:1px;transition:all .1s}
+.ab:hover{border-color:var(--gd);color:var(--g)}
+.ab.on{border-color:var(--g);background:rgba(212,160,23,.06);color:var(--g);font-weight:600}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px}
+.fld label{font-size:8px;color:var(--mu);letter-spacing:1px;display:block;margin-bottom:3px;text-transform:uppercase}
+.fld input{width:100%;background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:7px 7px;font-family:var(--mo);font-size:11px;outline:none;transition:border-color .12s}
+.fld input:focus{border-color:var(--g)}
+.fld input.filled{border-color:rgba(212,160,23,.3);color:var(--g)}
+
+/* F1 */
+.f1-row{display:flex;gap:6px;align-items:stretch;margin-bottom:0}
+.f1-btn{flex:1;background:var(--bg);border:1px solid var(--b2);color:var(--mu);padding:8px;font-family:var(--mo);font-size:10px;cursor:pointer;text-align:center;letter-spacing:2px;transition:all .1s}
+.f1-btn:hover{border-color:var(--gd)}
+.f1-btn.f1-pass{border-color:var(--gr);background:rgba(29,185,84,.08);color:var(--gr)}
+.f1-btn.f1-fail{border-color:var(--rd);background:rgba(230,57,70,.08);color:var(--rd)}
+.f1-note{flex:2;background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:7px 8px;font-family:var(--mo);font-size:10px;outline:none}
+.f1-note:focus{border-color:var(--g)}
+
+/* CHECKLIST */
+.checklist{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:0}
+.chk-item{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--mu);letter-spacing:1px}
+.chk-item.done{color:var(--gr)}
+.chk-dot{width:5px;height:5px;border-radius:50%;background:var(--b2);flex-shrink:0}
+.chk-item.done .chk-dot{background:var(--gr)}
+
+.runb{width:100%;background:var(--g);border:none;color:var(--bg);padding:14px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:4px;cursor:pointer;margin-bottom:8px;transition:opacity .12s}
+.runb:hover{opacity:.88}
+
+.out{display:none}
+.out-t{font-size:9px;color:var(--gd);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px}
+.out-box{background:var(--bg);border:1px solid rgba(29,185,84,.2);padding:12px;font-size:10px;line-height:1.9;white-space:pre-wrap;word-break:break-word;color:#78c878;max-height:320px;overflow-y:auto;margin-bottom:6px}
+.copyb{width:100%;background:rgba(29,185,84,.05);border:1px solid rgba(29,185,84,.25);color:var(--gr);padding:10px;font-family:var(--mo);font-size:9px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;transition:background .12s}
+.copyb:hover{background:rgba(29,185,84,.1)}
+
+.resetb{width:100%;background:transparent;border:1px solid var(--b2);color:var(--mu);padding:7px;font-family:var(--mo);font-size:9px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;margin-top:6px;transition:all .12s}
+.resetb:hover{border-color:var(--rd);color:var(--rd)}
+
+.errb{background:rgba(230,57,70,.04);border:1px solid rgba(230,57,70,.2);padding:10px;font-size:10px;color:var(--or);line-height:1.7;margin-bottom:8px;display:none}
+.foot{font-size:8px;color:#1a1a28;text-align:center;padding:10px 0 2px}
+
+@media(max-width:380px){.ag{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="w">
+
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>APEX QUANT V9</h1>
+    <span>Module 0 Collector</span>
+  </div>
+  <div class="hdr-r">
+    <div>MT5 · FinancialJuice · TradingView</div>
+    <div class="mode-badge">100% MANUEL</div>
+  </div>
+</div>
+
+<!-- ACTIF -->
+<div class="sec">
+  <div class="sec-t">// Actif</div>
+  <div class="ag">
+    <button class="ab on" data-a="XAUUSD" onclick="pick(this)">XAUUSD</button>
+    <button class="ab" data-a="BTCUSD"  onclick="pick(this)">BTCUSD</button>
+    <button class="ab" data-a="EURUSD"  onclick="pick(this)">EURUSD</button>
+    <button class="ab" data-a="GBPUSD"  onclick="pick(this)">GBPUSD</button>
+    <button class="ab" data-a="USDJPY"  onclick="pick(this)">USDJPY</button>
+    <button class="ab" data-a="NAS100"  onclick="pick(this)">NAS100</button>
+    <button class="ab" data-a="US30"    onclick="pick(this)">US30</button>
+    <button class="ab" data-a="ETHUSD"  onclick="pick(this)">ETHUSD</button>
+  </div>
+</div>
+
+<!-- MT5 DONNÉES -->
+<div class="sec">
+  <div class="sec-t">// MetaTrader 5 <span class="sec-src mt5">MT5</span></div>
+  <div class="g2">
+    <div class="fld"><label>Prix Live (Bid)</label><input type="number" id="d-price" placeholder="ex: 3321.50" step="0.01" oninput="onInput(this)"></div>
+    <div class="fld"><label>ATR M15 (pér. 14)</label><input type="number" id="d-atr15" placeholder="ex: 8.5" step="0.01" oninput="onInput(this)"></div>
+  </div>
+  <div class="g4">
+    <div class="fld"><label>Open J-1</label> <input type="number" id="d-open"  placeholder="ex: 4595" oninput="onInput(this)"></div>
+    <div class="fld"><label>High J-1</label> <input type="number" id="d-high"  placeholder="ex: 4610" oninput="onInput(this)"></div>
+    <div class="fld"><label>Low J-1</label>  <input type="number" id="d-low"   placeholder="ex: 4510" oninput="onInput(this)"></div>
+    <div class="fld"><label>Close J-1</label><input type="number" id="d-close" placeholder="ex: 4536" oninput="onInput(this)"></div>
+  </div>
+  <div class="g3">
+    <div class="fld"><label>ATR Daily (pér. 14)</label><input type="number" id="d-atrd" placeholder="ex: 95" step="0.01" oninput="onInput(this)"></div>
+    <div class="fld"><label>DXY</label>      <input type="number" id="d-dxy"   placeholder="ex: 99.01" step="0.001" oninput="onInput(this)"></div>
+    <div class="fld"><label>US10Y %</label>  <input type="number" id="d-us10y" placeholder="ex: 4.42" step="0.001" oninput="onInput(this)"></div>
+  </div>
+</div>
+
+<!-- F1 -->
+<div class="sec">
+  <div class="sec-t">// Filtre F1 <span class="sec-src fj">FinancialJuice</span></div>
+  <div class="f1-row">
+    <button class="f1-btn" id="f1-pass-btn" onclick="setF1(true)">✅ PASS</button>
+    <button class="f1-btn" id="f1-fail-btn" onclick="setF1(false)">❌ ÉCHOUÉ</button>
+    <input type="text" class="f1-note" id="f1-note" placeholder="Prochain 🔴 event (ex: FOMC 14h30)">
+  </div>
+</div>
+
+<!-- CHECKLIST -->
+<div class="sec" id="chk-sec">
+  <div class="sec-t">// Checklist avant génération</div>
+  <div class="checklist" id="checklist">
+    <div class="chk-item" id="chk-price"><div class="chk-dot"></div>Prix live</div>
+    <div class="chk-item" id="chk-atr15"><div class="chk-dot"></div>ATR M15</div>
+    <div class="chk-item" id="chk-ohlc"><div class="chk-dot"></div>OHLC J-1 complet</div>
+    <div class="chk-item" id="chk-atrd"><div class="chk-dot"></div>ATR Daily</div>
+    <div class="chk-item" id="chk-dxy"><div class="chk-dot"></div>DXY</div>
+    <div class="chk-item" id="chk-us10y"><div class="chk-dot"></div>US10Y</div>
+    <div class="chk-item" id="chk-f1"><div class="chk-dot"></div>F1 statut</div>
+  </div>
+</div>
+
+<button class="runb" id="run-btn" onclick="generate()">▶ GÉNÉRER LE BLOC V9</button>
+
+<div class="errb" id="errb"></div>
+
+<div class="out" id="out">
+  <div class="out-t">// Bloc à coller dans Claude / Gemini</div>
+  <div class="out-box" id="out-box"></div>
+  <button class="copyb" id="copyb" onclick="doCopy()">⎘ COPIER LE BLOC</button>
+  <button class="resetb" onclick="resetForm()">↺ Nouveau trade</button>
+</div>
+
+<div class="foot">100% local · Aucune donnée transmise · Fonctionne hors ligne</div>
+</div>
+
+<script>
+const LABELS={
+  XAUUSD:"Gold / USD", BTCUSD:"Bitcoin / USD", EURUSD:"Euro / USD",
+  GBPUSD:"GBP / USD", USDJPY:"USD / JPY", NAS100:"Nasdaq 100",
+  US30:"Dow Jones", ETHUSD:"Ethereum / USD"
+};
+const SZ={COMPRESSÉ:{r:0.5,rr:"1:4"},NORMAL:{r:1.0,rr:"1:3"},VOLATILE:{r:0.5,rr:"1:2.5"},EXTRÊME:{r:0.0,rr:"NO TRADE"},INCONNU:{r:0.5,rr:"1:3"}};
+
+let sel="XAUUSD", f1State=null;
+const $=id=>document.getElementById(id);
+
+function pick(b){document.querySelectorAll(".ab").forEach(x=>x.classList.remove("on"));b.classList.add("on");sel=b.dataset.a}
+
+function setF1(pass){
+  f1State=pass;
+  $("f1-pass-btn").className="f1-btn"+(pass?" f1-pass":"");
+  $("f1-fail-btn").className="f1-btn"+(!pass?" f1-fail":"");
+  updateChecklist();
+}
+
+function onInput(el){
+  if(el.value) el.classList.add("filled"); else el.classList.remove("filled");
+  updateChecklist();
+}
+
+function updateChecklist(){
+  const checks={
+    "chk-price": !!$("d-price").value,
+    "chk-atr15": !!$("d-atr15").value,
+    "chk-ohlc":  !!$("d-open").value&&!!$("d-high").value&&!!$("d-low").value&&!!$("d-close").value,
+    "chk-atrd":  !!$("d-atrd").value,
+    "chk-dxy":   !!$("d-dxy").value,
+    "chk-us10y": !!$("d-us10y").value,
+    "chk-f1":    f1State!==null,
+  };
+  Object.entries(checks).forEach(([id,ok])=>{
+    const el=$(id);
+    if(ok){el.classList.add("done");el.querySelector(".chk-dot").style.background="var(--gr)"}
+    else{el.classList.remove("done");el.querySelector(".chk-dot").style.background="var(--b2)"}
+  });
+}
+
+function regLabel(m15,daily){
+  if(!m15||!daily) return"INCONNU";
+  const r=m15/(daily/32);
+  if(r<0.5)return"COMPRESSÉ";if(r<=1.5)return"NORMAL";if(r<=2.0)return"VOLATILE";return"EXTRÊME";
+}
+
+function generate(){
+  $("errb").style.display="none";
+  const price=parseFloat($("d-price").value)||null;
+  const atrM15=parseFloat($("d-atr15").value)||null;
+  const open=parseFloat($("d-open").value)||null;
+  const high=parseFloat($("d-high").value)||null;
+  const low=parseFloat($("d-low").value)||null;
+  const close=parseFloat($("d-close").value)||null;
+  const atrD=parseFloat($("d-atrd").value)||null;
+  const dxy=parseFloat($("d-dxy").value)||null;
+  const us10y=parseFloat($("d-us10y").value)||null;
+
+  const missing=[];
+  if(!price) missing.push("Prix live");
+  if(!atrM15) missing.push("ATR M15");
+  if(!open||!high||!low||!close) missing.push("OHLC J-1 (4 valeurs)");
+  if(f1State===null) missing.push("F1 statut");
+
+  if(missing.length>0){
+    $("errb").style.display="block";
+    $("errb").innerHTML="⚠️ Champs manquants :<br>"+missing.map(m=>"• "+m).join("<br>");
+    return;
+  }
+
+  const ts=new Date().toISOString().slice(0,19)+"Z";
+  const reg=regLabel(atrM15,atrD);
+  const sz=SZ[reg];
+  const f1Note=$("f1-note").value.trim();
+
+  let b=`[MODULE 0 — APEX QUANT V9 — ${ts}]\n`;
+  b+=`${"─".repeat(48)}\n`;
+  b+=`Actif    : ${LABELS[sel]} (${sel})\n`;
+  b+=`Prix live: ${price} [MT5]\n\n`;
+  b+=`OHLC J-1 :\n`;
+  b+=`  O:${open}  H:${high}  L:${low}  C:${close} [MT5]\n\n`;
+  b+=`ATR M15   : ${atrM15} [MT5-CALC]\n`;
+  b+=`ATR Daily : ${atrD??'N/A'} [MT5-CALC]\n`;
+  b+=`Régime    : ${reg} → Risque ${sz.r}% capital | RR min ${sz.rr}\n\n`;
+  b+=`DXY       : ${dxy??'N/A'} [MT5]\n`;
+  b+=`US10Y     : ${us10y??'N/A'}% [TV/FRED]\n`;
+  b+=`Real Yield: N/A\n\n`;
+  b+=`[MODULE 1 — FILTRE F1]\n`;
+  if(f1State){
+    b+=f1Note?`✅ F1 PASS — Prochain: ${f1Note}\n`:`✅ F1 PASS — Aucun High Impact détecté\n`;
+  } else {
+    b+=`❌ F1 ÉCHOUÉ${f1Note?" — "+f1Note:""}\n`;
+  }
+  b+=`${"─".repeat(48)}\n`;
+  b+=`analyse ${sel} @${price}`;
+
+  $("out-box").textContent=b;
+  $("out").style.display="block";
+  setTimeout(()=>$("out").scrollIntoView({behavior:"smooth"}),150);
+}
+
+function doCopy(){
+  const text=$("out-box").textContent, btn=$("copyb");
+  const ta=document.createElement("textarea");
+  ta.value=text;ta.style.cssText="position:fixed;top:0;left:0;opacity:.01;width:100px;font-size:12px;";
+  document.body.appendChild(ta);ta.focus();ta.select();ta.setSelectionRange(0,99999);
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}
+  document.body.removeChild(ta);
+  if(!ok){try{navigator.clipboard.writeText(text).then(()=>flash(btn,"✅ COPIÉ!"));return}catch(e){}}
+  flash(btn,"✅ COPIÉ!");
+}
+
+function flash(b,m){const o=b.textContent;b.textContent=m;setTimeout(()=>b.textContent=o,2500)}
+
+function resetForm(){
+  ["d-price","d-atr15","d-open","d-high","d-low","d-close","d-atrd","d-dxy","d-us10y","f1-note"]
+    .forEach(id=>{$(id).value="";$(id).classList.remove("filled")});
+  f1State=null;
+  $("f1-pass-btn").className="f1-btn";
+  $("f1-fail-btn").className="f1-btn";
+  $("out").style.display="none";
+  $("errb").style.display="none";
+  updateChecklist();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+</script>
+</body>
+</html>
