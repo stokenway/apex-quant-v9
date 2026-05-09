@@ -112,19 +112,15 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 
 <!-- CLÉS -->
 <div class="sec">
-  <div class="sec-t">// Clés API <span class="sec-badge">Sauvegardées localement</span></div>
+  <div class="sec-t">// Clé API <span class="sec-badge">Sauvegardée localement</span></div>
   <div class="kr">
     <span class="kr-lbl">APIFY</span>
     <input type="password" class="kr-inp" id="k-ap" placeholder="apify_api_..." autocomplete="off">
     <button class="eyeb" onclick="tv('k-ap')">👁</button>
   </div>
-  <div class="kr">
-    <span class="kr-lbl">FRED</span>
-    <input type="password" class="kr-inp" id="k-fr" placeholder="fred key..." autocomplete="off">
-    <button class="eyeb" onclick="tv('k-fr')">👁</button>
-  </div>
-  <button class="saveb" onclick="saveKeys()">💾 Sauvegarder les clés</button>
-  <div class="saved-ok" id="sv-ok">✅ Clés sauvegardées</div>
+  <div style="font-size:9px;color:var(--gr);margin-top:4px;letter-spacing:1px">✅ US10Y — Yahoo Finance direct (sans clé)</div>
+  <button class="saveb" onclick="saveKeys()">💾 Sauvegarder la clé</button>
+  <div class="saved-ok" id="sv-ok">✅ Clé sauvegardée</div>
 </div>
 
 <!-- ACTIF -->
@@ -221,16 +217,15 @@ function setF1(pass){
 }
 
 function saveKeys(){
-  const ap=$("k-ap").value.trim(), fr=$("k-fr").value.trim();
-  if(!ap||!fr){alert("Remplis les 2 clés.");return}
-  localStorage.setItem("aqv9_ap",ap);localStorage.setItem("aqv9_fr",fr);
-  ["k-ap","k-fr"].forEach(id=>$(id).classList.add("ok"));
+  const ap=$("k-ap").value.trim();
+  if(!ap){alert("Remplis la clé Apify.");return}
+  localStorage.setItem("aqv9_ap",ap);
+  $("k-ap").classList.add("ok");
   $("sv-ok").style.display="block";setTimeout(()=>$("sv-ok").style.display="none",2500);
 }
 function loadKeys(){
-  const ap=localStorage.getItem("aqv9_ap"), fr=localStorage.getItem("aqv9_fr");
+  const ap=localStorage.getItem("aqv9_ap");
   if(ap){$("k-ap").value=ap;$("k-ap").classList.add("ok")}
-  if(fr){$("k-fr").value=fr;$("k-fr").classList.add("ok")}
 }
 
 function setP(p,m){$("pb").style.width=p+"%";$("pst").textContent=m}
@@ -286,21 +281,35 @@ function regLabel(m15,daily){
   if(r<0.5)return"COMPRESSÉ";if(r<=1.5)return"NORMAL";if(r<=2.0)return"VOLATILE";return"EXTRÊME";
 }
 
-// ── FRED ──────────────────────────────────────────────────────────
-async function fredFetch(series,key){
+// ── YAHOO FINANCE DIRECT — US10Y (sans clé) ───────────────────────
+async function fetchUS10Y(){
+  // ^TNX = US 10Y Treasury Yield
   try{
-    const r=await fetch(`https://api.stlouisfed.org/fred/series/observations?series_id=${series}&api_key=${key}&file_type=json&sort_order=desc&limit=5&observation_start=2020-01-01`);
-    if(!r.ok) return null;
+    const r=await fetch("https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?interval=1d&range=5d");
+    if(!r.ok) throw new Error(r.status);
     const d=await r.json();
-    const v=d.observations?.find(o=>o.value!==".");
-    return v?Math.round(parseFloat(v.value)*1000)/1000:null;
-  }catch(e){return null}
+    const closes=d?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+    if(!closes) return null;
+    const last=closes.filter(v=>v!==null).pop();
+    return last?Math.round(last*1000)/1000:null;
+  }catch(e){
+    // Fallback: query2
+    try{
+      const r2=await fetch("https://query2.finance.yahoo.com/v8/finance/chart/%5ETNX?interval=1d&range=5d");
+      if(!r2.ok) return null;
+      const d2=await r2.json();
+      const closes2=d2?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+      if(!closes2) return null;
+      const last2=closes2.filter(v=>v!==null).pop();
+      return last2?Math.round(last2*1000)/1000:null;
+    }catch(e2){return null}
+  }
 }
 
 // ── MAIN RUN ──────────────────────────────────────────────────────
 async function run(){
-  const apKey=$("k-ap").value.trim(), frKey=$("k-fr").value.trim();
-  if(!apKey||!frKey){alert("Remplis les 2 clés API.");return}
+  const apKey=$("k-ap").value.trim();
+  if(!apKey){alert("Remplis la clé Apify.");return}
   if(f1State===null){alert("Indique le statut F1 (PASS ou ÉCHOUÉ).");return}
   const price=parseFloat($("m-price").value)||null;
   const atrM15=parseFloat($("m-atr15").value)||null;
@@ -365,17 +374,16 @@ async function run(){
 
     $("auto-sec").style.display="block";
 
-    // 2. FRED
-    setP(75,"FRED — macro US...");
-    if(cfg.fred.length>0){
-      for(const sid of cfg.fred){
-        const val=await fredFetch(sid,frKey);
-        const lbl=FRED_LBL[sid]||sid;
-        if(val!==null){D[lbl]=val;pill(`${sid} ${val}%`,"ok")}
-        else pill(`${sid} N/A`,"wa");
-      }
-      $("a-us10y").value=(D.us10y||"N/A")+(D.us10y?"%":"");
-      if(D.us10y) $("a-us10y").classList.add("auto-ok");
+    // 2. Yahoo Finance Direct — US10Y sans clé
+    setP(75,"US10Y — Yahoo Finance...");
+    const us10y=await fetchUS10Y();
+    if(us10y!==null){
+      D.us10y=us10y;
+      $("a-us10y").value=us10y+"%";
+      $("a-us10y").classList.add("auto-ok");
+      pill(`US10Y ${us10y}%`,"ok");
+    } else {
+      pill("US10Y N/A","wa");
     }
 
     // 3. Build
