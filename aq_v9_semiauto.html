@@ -125,6 +125,12 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
     <input type="password" class="kr-inp" id="k-td" placeholder="Clé Twelve Data (optionnel — test ATR M15)" autocomplete="off">
     <button class="eyeb" onclick="tv('k-td')">👁</button>
   </div>
+  <div style="font-size:9px;color:var(--gr);margin-top:4px;letter-spacing:1px">📅 F1 Calendrier — Finnhub</div>
+  <div class="kr" style="margin-top:4px">
+    <span class="kr-lbl" style="font-size:8px">FH KEY</span>
+    <input type="password" class="kr-inp" id="k-fh" placeholder="Clé Finnhub (pour F1 calendrier auto)" autocomplete="off">
+    <button class="eyeb" onclick="tv('k-fh')">👁</button>
+  </div>
   <button class="saveb" onclick="saveKeys()">💾 Sauvegarder la clé</button>
   <div class="saved-ok" id="sv-ok">✅ Clé sauvegardée</div>
 </div>
@@ -233,6 +239,8 @@ function saveKeys(){
   localStorage.setItem("aqv9_ap",ap);
   const td=$("k-td").value.trim();
   if(td) localStorage.setItem("aqv9_td",td);
+  const fh=$("k-fh").value.trim();
+  if(fh) localStorage.setItem("aqv9_fh",fh);
   $("k-ap").classList.add("ok");
   $("sv-ok").style.display="block";setTimeout(()=>$("sv-ok").style.display="none",2500);
 }
@@ -240,57 +248,67 @@ function loadKeys(){
   const ap=localStorage.getItem("aqv9_ap");
   if(ap){$("k-ap").value=ap;$("k-ap").classList.add("ok")}
   const td=localStorage.getItem("aqv9_td");
-  if(td){$("k-td").value=td;}
+  if(td) $("k-td").value=td;
+  const fh=localStorage.getItem("aqv9_fh");
+  if(fh){$("k-fh").value=fh;$("k-fh").classList.add("ok")}
 }
 
 function setP(p,m){$("pb").style.width=p+"%";$("pst").textContent=m}
 function pill(t,c){const d=$("pills");d.style.display="flex";const p=document.createElement("div");p.className="pill p-"+c;p.textContent=t;d.appendChild(p)}
 function showErr(m){$("errb").style.display="block";$("errb").innerHTML=m}
 
-// ── FOREXFACTORY F1 AUTO ──────────────────────────────────────────
+// ── FINNHUB CALENDRIER F1 AUTO ────────────────────────────────────
 const HI_KW=["nfp","non-farm","cpi","inflation","fomc","fed rate","interest rate",
              "ecb rate","boe rate","gdp","pce","jobless","unemployment","pmi flash",
              "retail sales","ism","rba rate","boc rate","snb","rbnz"];
 
-async function fetchF1Auto(){
+async function fetchF1Auto(fhKey){
+  if(!fhKey) return{pass:null,detail:"⚠️ Clé Finnhub manquante — override manuel",events:[]};
   try{
-    const r=await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json",
-      {signal:AbortSignal.timeout(8000)});
-    if(!r.ok) throw new Error(r.status);
+    const today=new Date().toISOString().slice(0,10);
+    const r=await fetch(
+      `https://finnhub.io/api/v1/calendar/economic?from=${today}&to=${today}&token=${fhKey}`,
+      {signal:AbortSignal.timeout(8000)}
+    );
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
     const data=await r.json();
     const now=Date.now();
     const hiEvs=[];
 
-    data.forEach(ev=>{
-      const imp=(ev.impact||"").toLowerCase();
-      const name=(ev.title||"").toLowerCase();
-      const isHi=imp==="high"||HI_KW.some(k=>name.includes(k));
-      if(!isHi) return;
-      let min=null,inWin=false;
-      if(ev.date){
-        try{
-          const ms=new Date(ev.date).getTime();
-          min=Math.round((ms-now)/60000);
-          inWin=min>=-30&&min<=30;
-        }catch(e){}
-      }
-      hiEvs.push({name:ev.title,country:ev.country||"",min,inWin,date:ev.date||""});
-    });
+    if(data?.economicCalendar){
+      data.economicCalendar.forEach(ev=>{
+        const imp=(ev.impact||"").toLowerCase();
+        const name=(ev.event||"").toLowerCase();
+        const isHi=imp==="high"||imp==="3"||HI_KW.some(k=>name.includes(k));
+        if(!isHi) return;
+        let min=null,inWin=false;
+        if(ev.time){
+          try{
+            const ms=new Date(`${today}T${ev.time}:00Z`).getTime();
+            min=Math.round((ms-now)/60000);
+            inWin=min>=-30&&min<=30;
+          }catch(e){}
+        }
+        hiEvs.push({name:ev.event,country:ev.country||"",min,inWin,time:ev.time||""});
+      });
+    }
 
     const blocked=hiEvs.filter(e=>e.inWin);
     if(blocked.length>0){
-      return{pass:false,detail:`❌ F1 ÉCHOUÉ — ${blocked[0].name} dans ±30 min`,events:hiEvs};
+      return{pass:false,
+        detail:`❌ F1 ÉCHOUÉ — ${blocked[0].name} dans ±30 min (${blocked[0].time} UTC)`,
+        events:hiEvs};
     }
     const upcoming=hiEvs.filter(e=>e.min!==null&&e.min>30).sort((a,b)=>a.min-b.min);
     const nxt=upcoming[0];
     return{
       pass:true,
-      detail:nxt?`✅ F1 PASS — Prochain: ${nxt.name} dans ${nxt.min} min`:
-                 "✅ F1 PASS — Aucun High Impact cette semaine",
+      detail:nxt?`✅ F1 PASS — Prochain: ${nxt.name} dans ${nxt.min} min (${nxt.time} UTC)`
+                :"✅ F1 PASS — Aucun High Impact détecté",
       events:hiEvs
     };
   }catch(e){
-    return{pass:null,detail:`⚠️ ForexFactory indisponible — ${e.message}`,events:[]};
+    return{pass:null,detail:`⚠️ Finnhub indisponible: ${e.message}`,events:[]};
   }
 }
 
@@ -433,9 +451,10 @@ async function run(){
     if(priceManual) pill(`Prix ${priceManual} [MT5]`,"ok");
     if(atrM15Manual) pill(`ATR M15 ${atrM15Manual} [MT5]`,"ok");
 
-    // 0. F1 auto — ForexFactory
-    setP(8,"F1 — ForexFactory...");
-    const f1Auto=await fetchF1Auto();
+    // 0. F1 auto — Finnhub calendrier
+    setP(8,"F1 — Finnhub calendrier...");
+    const fhKey=localStorage.getItem("aqv9_fh")||"";
+    const f1Auto=await fetchF1Auto(fhKey);
     $("f1-auto-status").textContent=f1Auto.detail;
     $("f1-auto-status").style.color=f1Auto.pass===true?"var(--gr)":f1Auto.pass===false?"var(--rd)":"var(--or)";
     // Applique auto seulement si pas d'override manuel
