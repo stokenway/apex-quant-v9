@@ -705,15 +705,53 @@ async function run(){
 
     $("auto-sec").style.display="block";
 
-    // 3. Twelve Data — ATR M15 auto (Forex/Crypto seulement)
-    if(!cfg.manualATR&&tdKey&&!atrM15Manual){
-      setP(80,"Twelve Data — ATR M15...");
-      const tdATR=await fetchTDATR(cfg.td,tdKey);
-      if(tdATR){
-        D.atrM15=tdATR;D.atrM15Source="TD-AUTO";
-        $("m-atr15").value=tdATR;$("m-atr15").style.borderColor="rgba(29,185,84,.4)";
-        pill(`ATR M15 ${tdATR} [TD]`,"ok");
-      } else pill("ATR M15 TD: N/A","wa");
+    // 3. Twelve Data — ATR M15 + Daily OHLC pour Forex/Crypto (précision 5 décimales)
+    if(!cfg.manualATR&&tdKey){
+      setP(80,"Twelve Data — M15 + Daily...");
+
+      // M15 — ATR M15 auto
+      if(!atrM15Manual){
+        const tdATR=await fetchTDATR(cfg.td,tdKey);
+        if(tdATR){
+          D.atrM15=tdATR;D.atrM15Source="TD-AUTO";
+          $("m-atr15").value=tdATR;$("m-atr15").style.borderColor="rgba(29,185,84,.4)";
+          pill(`ATR M15 ${tdATR} [TD]`,"ok");
+        } else pill("ATR M15 TD: N/A","wa");
+      }
+
+      // Daily — OHLC + ATR Daily avec précision correcte
+      try{
+        const dec=cfg.dec||2;
+        const f=v=>Math.round(parseFloat(v)*(10**dec))/(10**dec);
+        const rdaily=await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(cfg.td)}&interval=1day&outputsize=22&apikey=${tdKey}`);
+        if(rdaily.ok){
+          const ddaily=await rdaily.json();
+          if(ddaily?.values&&ddaily.status!=="error"){
+            const bars=ddaily.values.reverse().map(v=>({
+              dt:v.datetime,
+              h:parseFloat(v.high),l:parseFloat(v.low),
+              o:parseFloat(v.open),c:parseFloat(v.close)
+            }));
+            const atrD=calcATR(bars);
+            if(atrD){
+              D.atrDaily=atrD;
+              D.atrDailySource="TD-CALC";
+              $("a-atrd").value=atrD;
+              pill(`ATR D ${atrD} [TD]`,"ok");
+            }
+            // OHLC J-1 depuis TD (meilleure précision)
+            if(bars.length>=2){
+              const prev=bars[bars.length-2];
+              D.ohlcD1={open:f(prev.o),high:f(prev.h),low:f(prev.l),close:f(prev.c)};
+              D.ohlcSource="TD-YF";
+              $("a-open").value=D.ohlcD1.open;$("a-high").value=D.ohlcD1.high;
+              $("a-low").value=D.ohlcD1.low;$("a-close").value=D.ohlcD1.close;
+              pill("OHLC J-1 [TD]","ok");
+            }
+          }
+        }
+      }catch(e){ /* fallback Apify déjà chargé */ }
+
     } else if(!cfg.manualATR&&!tdKey&&!atrM15Manual){
       pill("ATR M15: clé TD manquante","wa");
     }
@@ -757,9 +795,9 @@ function buildBloc(){
   b+=`Actif    : ${AM[D.sel].label} (${D.sel})\n`;
   b+=`Prix live: ${D.price??'N/A'} [${D.priceSource==="APIFY-PC"?"APIFY-PC":"MT5"}]\n\n`;
   b+=`OHLC J-1 :\n`;
-  b+=`  O:${d1.open??'N/A'}  H:${d1.high??'N/A'}  L:${d1.low??'N/A'}  C:${d1.close??'N/A'} [APIFY-YF]\n\n`;
+  b+=`  O:${d1.open??'N/A'}  H:${d1.high??'N/A'}  L:${d1.low??'N/A'}  C:${d1.close??'N/A'} [${D.ohlcSource??"APIFY-YF"}]\n\n`;
   b+=`ATR M15   : ${D.atrM15??'N/A'} [${D.atrM15Source==="TD-AUTO"?"TD-AUTO":"MT5-CALC"}]\n`;
-  b+=`ATR Daily : ${D.atrDaily??'N/A'} [APIFY-CALC]\n`;
+  b+=`ATR Daily : ${D.atrDaily??'N/A'} [${D.atrDailySource??"APIFY-CALC"}]\n`;
   b+=`Régime    : ${D.reg} → Risque ${sz.r}% capital | RR min ${sz.rr}\n\n`;
   b+=`DXY       : ${D.dxy??'N/A'} [APIFY-YF]\n`;
   b+=`US10Y     : ${D.us10y??'N/A'}% [APIFY-YF]\n`;
