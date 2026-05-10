@@ -365,8 +365,7 @@ async function run(){
   if(!apKey){alert("Remplis la clé Apify.");return}
   if(f1State===null){alert("Indique le statut F1 (PASS ou ÉCHOUÉ).");return}
   const priceManual=parseFloat($("m-price").value)||null;
-  const atrM15=parseFloat($("m-atr15").value)||null;
-  if(!atrM15){alert("Saisis l'ATR M15 depuis MT5.");return}
+  const atrM15Manual=parseFloat($("m-atr15").value)||null;
 
   const btn=$("run-btn");
   btn.disabled=true;btn.textContent="⏳ EN COURS...";
@@ -380,10 +379,11 @@ async function run(){
 
   const ts=new Date().toISOString().slice(0,19)+"Z";
   const cfg=AM[sel];
-  D={sel,ts,price:priceManual,priceSource:"MT5",atrM15,ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
+  D={sel,ts,price:priceManual,priceSource:"MT5",atrM15:atrM15Manual,atrM15Source:"MT5-CALC",ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
 
   try{
     if(priceManual) pill(`Prix ${priceManual} [MT5]`,"ok");
+    if(atrM15Manual) pill(`ATR M15 ${atrM15Manual} [MT5]`,"ok");
     // 1. Apify Yahoo Finance — OHLC + DXY + US10Y + Prix proxy
     const tickers=[cfg.ticker||"GC=F", cfg.dxy, "^TNX"].filter(Boolean);
     setP(15,"Apify — démarrage du run...");
@@ -403,8 +403,8 @@ async function run(){
         close:Math.round((prev?.close||last.close)*100)/100,
       };
       D.atrDaily=calcATR(hist);
-      D.reg=regLabel(atrM15, D.atrDaily);
-      D.sz=SZ[D.reg]||SZ["INCONNU"];
+      // Régime calculé après — ATR M15 peut venir de TD plus tard
+      D.reg="INCONNU"; D.sz=SZ["INCONNU"];
 
       // Prix auto depuis previous_close si non fourni manuellement
       if(!D.price){
@@ -495,6 +495,11 @@ async function run(){
     } else {
       pill("TD: pas de clé — ATR M15 manuel","wa");
     }
+
+    // Calcul régime final (après TD potentiel)
+    D.reg=regLabel(D.atrM15, D.atrDaily);
+    D.sz=SZ[D.reg]||SZ["INCONNU"];
+    if(D.atrM15) $("a-reg").value=D.reg;
 
     // 4. Build
     setP(95,"Génération du bloc V9...");
