@@ -118,7 +118,7 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
     <input type="password" class="kr-inp" id="k-ap" placeholder="apify_api_..." autocomplete="off">
     <button class="eyeb" onclick="tv('k-ap')">👁</button>
   </div>
-  <div style="font-size:9px;color:var(--gr);margin-top:4px;letter-spacing:1px">✅ US10Y — Yahoo Finance direct (sans clé)</div>
+  <div style="font-size:9px;color:var(--gr);margin-top:4px;letter-spacing:1px">✅ US10Y — via Apify (^TNX, sans clé séparée)</div>
   <button class="saveb" onclick="saveKeys()">💾 Sauvegarder la clé</button>
   <div class="saved-ok" id="sv-ok">✅ Clé sauvegardée</div>
 </div>
@@ -332,7 +332,7 @@ async function run(){
 
   try{
     // 1. Apify Yahoo Finance
-    const tickers=[cfg.ticker||"GC=F", cfg.dxy].filter(Boolean);
+    const tickers=[cfg.ticker||"GC=F", cfg.dxy, "^TNX"].filter(Boolean);
     setP(15,"Apify — démarrage du run...");
     const apData=await apifyRun(apKey, tickers);
     setP(60,"Apify — parsing des données...");
@@ -374,14 +374,21 @@ async function run(){
 
     $("auto-sec").style.display="block";
 
-    // 2. Yahoo Finance Direct — US10Y sans clé
-    setP(75,"US10Y — Yahoo Finance...");
-    const us10y=await fetchUS10Y();
-    if(us10y!==null){
-      D.us10y=us10y;
-      $("a-us10y").value=us10y+"%";
+    // 2. US10Y depuis Apify ^TNX
+    setP(75,"US10Y — parsing Apify ^TNX...");
+    const tnxD=apData.find(d=>d.ticker==="^TNX"||d.symbol==="^TNX");
+    if(tnxD?.history?.data?.length>0){
+      const hist=tnxD.history.data;
+      const last=hist[hist.length-1];
+      D.us10y=Math.round((last.close||last.open)*1000)/1000;
+      $("a-us10y").value=D.us10y+"%";
       $("a-us10y").classList.add("auto-ok");
-      pill(`US10Y ${us10y}%`,"ok");
+      pill(`US10Y ${D.us10y}%`,"ok");
+    } else if(tnxD?.stock_info?.previous_close){
+      D.us10y=Math.round(parseFloat(tnxD.stock_info.previous_close)*1000)/1000;
+      $("a-us10y").value=D.us10y+"%";
+      $("a-us10y").classList.add("auto-ok");
+      pill(`US10Y ${D.us10y}%`,"ok");
     } else {
       pill("US10Y N/A","wa");
     }
@@ -416,8 +423,8 @@ function buildBloc(){
   b+=`ATR Daily : ${D.atrDaily??'N/A'} [APIFY-CALC]\n`;
   b+=`Régime    : ${D.reg} → Risque ${sz.r}% capital | RR min ${sz.rr}\n\n`;
   b+=`DXY       : ${D.dxy??'N/A'} [APIFY-YF]\n`;
-  b+=`US10Y     : ${D.us10y??'N/A'}% [FRED]\n`;
-  b+=`Real Yield: ${D.realYield??'N/A'}% [FRED]\n\n`;
+  b+=`US10Y     : ${D.us10y??'N/A'}% [APIFY-YF]\n`;
+  b+=`Real Yield: N/A\n\n`;
   b+=`[MODULE 1 — FILTRE F1]\n`;
   if(D.f1){
     b+=D.f1Note?`✅ F1 PASS — Prochain: ${D.f1Note}\n`:`✅ F1 PASS — Aucun High Impact détecté\n`;
