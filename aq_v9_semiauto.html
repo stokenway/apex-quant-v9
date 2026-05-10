@@ -142,7 +142,10 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 <div class="sec">
   <div class="sec-t">// Depuis MetaTrader 5 <span class="sec-badge manual">MANUEL</span></div>
   <div class="g2">
-    <div class="fld"><label>Prix Live (Bid/Ask)</label><input type="number" id="m-price" placeholder="ex: 3321.50" step="0.01"></div>
+    <div class="fld">
+      <label>Prix Live <span style="color:var(--gr);font-size:8px">(optionnel — auto si vide)</span></label>
+      <input type="number" id="m-price" placeholder="Auto via Metals.live" step="0.01">
+    </div>
     <div class="fld"><label>ATR M15 (période 14)</label><input type="number" id="m-atr15" placeholder="ex: 8.5" step="0.01"></div>
   </div>
 </div>
@@ -281,6 +284,46 @@ function regLabel(m15,daily){
   if(r<0.5)return"COMPRESSÉ";if(r<=1.5)return"NORMAL";if(r<=2.0)return"VOLATILE";return"EXTRÊME";
 }
 
+// ── PRIX LIVE AUTO ────────────────────────────────────────────────
+async function fetchPriceLive(asset){
+  try{
+    // XAUUSD → Metals.live
+    if(asset==="XAUUSD"){
+      const r=await fetch("https://api.metals.live/v1/spot/gold");
+      if(!r.ok) throw new Error();
+      const d=await r.json();
+      if(d?.[0]?.gold) return Math.round(d[0].gold*100)/100;
+    }
+    // Crypto → CoinGecko public
+    if(asset==="BTCUSD"){
+      const r=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd");
+      if(!r.ok) throw new Error();
+      const d=await r.json();
+      return d?.bitcoin?.usd||null;
+    }
+    if(asset==="ETHUSD"){
+      const r=await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+      if(!r.ok) throw new Error();
+      const d=await r.json();
+      return d?.ethereum?.usd||null;
+    }
+    // Forex → Frankfurter API
+    const fxMap={EURUSD:"EUR",GBPUSD:"GBP",USDJPY:"JPY"};
+    if(fxMap[asset]){
+      const cur=fxMap[asset];
+      const r=await fetch(`https://api.frankfurter.app/latest?from=${cur==="JPY"?"USD":"USD"}&to=${cur==="JPY"?cur:"USD"}`);
+      if(!r.ok) throw new Error();
+      const d=await r.json();
+      if(asset==="USDJPY") return Math.round(d?.rates?.JPY*100)/100;
+      const rr=await fetch(`https://api.frankfurter.app/latest?from=${cur}&to=USD`);
+      if(!rr.ok) throw new Error();
+      const dd=await rr.json();
+      return Math.round(dd?.rates?.USD*10000)/10000;
+    }
+  }catch(e){}
+  return null; // NAS100/US30 → pas de source gratuite fiable
+}
+
 // ── YAHOO FINANCE DIRECT — US10Y (sans clé) ───────────────────────
 async function fetchUS10Y(){
   // ^TNX = US 10Y Treasury Yield
@@ -311,9 +354,8 @@ async function run(){
   const apKey=$("k-ap").value.trim();
   if(!apKey){alert("Remplis la clé Apify.");return}
   if(f1State===null){alert("Indique le statut F1 (PASS ou ÉCHOUÉ).");return}
-  const price=parseFloat($("m-price").value)||null;
+  const priceManual=parseFloat($("m-price").value)||null;
   const atrM15=parseFloat($("m-atr15").value)||null;
-  if(!price){alert("Saisis le prix live depuis MT5.");return}
   if(!atrM15){alert("Saisis l'ATR M15 depuis MT5.");return}
 
   const btn=$("run-btn");
@@ -328,9 +370,26 @@ async function run(){
 
   const ts=new Date().toISOString().slice(0,19)+"Z";
   const cfg=AM[sel];
-  D={sel,ts,price,atrM15,ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
+  D={sel,ts,price:priceManual,priceSource:"MT5",atrM15,ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
 
   try{
+    // 0. Prix live auto (si non fourni manuellement)
+    if(!priceManual){
+      setP(8,"Prix live — auto fetch...");
+      const autoPrice=await fetchPriceLive(sel);
+      if(autoPrice){
+        D.price=autoPrice;
+        D.priceSource="AUTO";
+        $("m-price").value=autoPrice;
+        $("m-price").style.borderColor="rgba(29,185,84,.4)";
+        pill(`Prix ${autoPrice} [AUTO]`,"ok");
+      } else {
+        pill("Prix N/A — saisis manuellement","er");
+        showErr(`⚠️ Prix auto indisponible pour ${sel}. Saisis le prix depuis MT5.`);
+      }
+    } else {
+      pill(`Prix ${priceManual} [MT5]`,"ok");
+    }
     // 1. Apify Yahoo Finance
     const tickers=[cfg.ticker||"GC=F", cfg.dxy, "^TNX"].filter(Boolean);
     setP(15,"Apify — démarrage du run...");
@@ -416,7 +475,7 @@ function buildBloc(){
   let b=`[MODULE 0 — APEX QUANT V9 — ${D.ts}]\n`;
   b+=`${"─".repeat(48)}\n`;
   b+=`Actif    : ${AM[D.sel].label} (${D.sel})\n`;
-  b+=`Prix live: ${D.price} [MT5]\n\n`;
+  b+=`Prix live: ${D.price??'N/A'} [${D.priceSource==="AUTO"?"AUTO-ML":"MT5"}]\n\n`;
   b+=`OHLC J-1 :\n`;
   b+=`  O:${d1.open}  H:${d1.high}  L:${d1.low}  C:${d1.close} [APIFY-YF]\n\n`;
   b+=`ATR M15   : ${D.atrM15} [MT5-CALC]\n`;
