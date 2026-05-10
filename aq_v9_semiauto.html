@@ -119,6 +119,12 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
     <button class="eyeb" onclick="tv('k-ap')">👁</button>
   </div>
   <div style="font-size:9px;color:var(--gr);margin-top:4px;letter-spacing:1px">✅ US10Y — via Apify (^TNX, sans clé séparée)</div>
+  <div style="font-size:9px;color:var(--or);margin-top:4px;letter-spacing:1px">🧪 ATR M15 — Twelve Data (optionnel, test)</div>
+  <div class="kr" style="margin-top:6px">
+    <span class="kr-lbl" style="font-size:8px">TD KEY</span>
+    <input type="password" class="kr-inp" id="k-td" placeholder="Clé Twelve Data (optionnel — test ATR M15)" autocomplete="off">
+    <button class="eyeb" onclick="tv('k-td')">👁</button>
+  </div>
   <button class="saveb" onclick="saveKeys()">💾 Sauvegarder la clé</button>
   <div class="saved-ok" id="sv-ok">✅ Clé sauvegardée</div>
 </div>
@@ -223,12 +229,16 @@ function saveKeys(){
   const ap=$("k-ap").value.trim();
   if(!ap){alert("Remplis la clé Apify.");return}
   localStorage.setItem("aqv9_ap",ap);
+  const td=$("k-td").value.trim();
+  if(td) localStorage.setItem("aqv9_td",td);
   $("k-ap").classList.add("ok");
   $("sv-ok").style.display="block";setTimeout(()=>$("sv-ok").style.display="none",2500);
 }
 function loadKeys(){
   const ap=localStorage.getItem("aqv9_ap");
   if(ap){$("k-ap").value=ap;$("k-ap").classList.add("ok")}
+  const td=localStorage.getItem("aqv9_td");
+  if(td){$("k-td").value=td;}
 }
 
 function setP(p,m){$("pb").style.width=p+"%";$("pst").textContent=m}
@@ -451,7 +461,42 @@ async function run(){
       pill("US10Y N/A","wa");
     }
 
-    // 3. Build
+    // 3. Twelve Data — Test ATR M15 (XAU/USD interval 15min)
+    setP(82,"Twelve Data — test ATR M15...");
+    const tdKey=localStorage.getItem("aqv9_td")||"";
+    if(tdKey){
+      try{
+        const tdR=await fetch(`https://api.twelvedata.com/time_series?symbol=XAU/USD&interval=15min&outputsize=30&apikey=${tdKey}`);
+        if(tdR.ok){
+          const tdD=await tdR.json();
+          if(tdD?.values?.length>0){
+            const bars=tdD.values.reverse().map(v=>({
+              o:parseFloat(v.open),h:parseFloat(v.high),
+              l:parseFloat(v.low),c:parseFloat(v.close)
+            }));
+            const atrCalc=calcATR(bars);
+            if(atrCalc){
+              D.atrM15auto=atrCalc;
+              // Si pas de saisie manuelle, on utilise la valeur auto
+              if(!D.atrM15||D.atrM15===parseFloat($("m-atr15").value)){
+                D.atrM15=atrCalc;
+                D.atrM15Source="TD-AUTO";
+                $("m-atr15").value=atrCalc;
+                $("m-atr15").style.borderColor="rgba(29,185,84,.4)";
+              }
+              pill(`ATR M15 ${atrCalc} [TD]`,"ok");
+            } else pill("ATR M15 calc échoué","wa");
+          } else {
+            const msg=tdD?.message||"pas de données";
+            pill(`ATR M15 TD: ${msg.slice(0,30)}`,"er");
+          }
+        } else pill("ATR M15 TD: HTTP "+tdR.status,"er");
+      }catch(e){ pill("ATR M15 TD: erreur réseau","er"); }
+    } else {
+      pill("TD: pas de clé — ATR M15 manuel","wa");
+    }
+
+    // 4. Build
     setP(95,"Génération du bloc V9...");
     const bloc=buildBloc();
     $("out-box").textContent=bloc;
@@ -474,10 +519,10 @@ function buildBloc(){
   let b=`[MODULE 0 — APEX QUANT V9 — ${D.ts}]\n`;
   b+=`${"─".repeat(48)}\n`;
   b+=`Actif    : ${AM[D.sel].label} (${D.sel})\n`;
-  b+=`Prix live: ${D.price??'N/A'} [${D.priceSource==="AUTO"?"AUTO-ML":"MT5"}]\n\n`;
+  b+=`Prix live: ${D.price??'N/A'} [${D.priceSource==="APIFY-PC"?"APIFY-PC":"MT5"}]\n\n`;
   b+=`OHLC J-1 :\n`;
   b+=`  O:${d1.open}  H:${d1.high}  L:${d1.low}  C:${d1.close} [APIFY-YF]\n\n`;
-  b+=`ATR M15   : ${D.atrM15} [MT5-CALC]\n`;
+  b+=`ATR M15   : ${D.atrM15??'N/A'} [${D.atrM15Source==="TD-AUTO"?"TD-AUTO":"MT5-CALC"}]\n`;
   b+=`ATR Daily : ${D.atrDaily??'N/A'} [APIFY-CALC]\n`;
   b+=`Régime    : ${D.reg} → Risque ${sz.r}% capital | RR min ${sz.rr}\n\n`;
   b+=`DXY       : ${D.dxy??'N/A'} [APIFY-YF]\n`;
