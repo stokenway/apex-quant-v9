@@ -373,30 +373,14 @@ async function run(){
   D={sel,ts,price:priceManual,priceSource:"MT5",atrM15,ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
 
   try{
-    // 0. Prix live auto (si non fourni manuellement)
-    if(!priceManual){
-      setP(8,"Prix live — auto fetch...");
-      const autoPrice=await fetchPriceLive(sel);
-      if(autoPrice){
-        D.price=autoPrice;
-        D.priceSource="AUTO";
-        $("m-price").value=autoPrice;
-        $("m-price").style.borderColor="rgba(29,185,84,.4)";
-        pill(`Prix ${autoPrice} [AUTO]`,"ok");
-      } else {
-        pill("Prix N/A — saisis manuellement","er");
-        showErr(`⚠️ Prix auto indisponible pour ${sel}. Saisis le prix depuis MT5.`);
-      }
-    } else {
-      pill(`Prix ${priceManual} [MT5]`,"ok");
-    }
-    // 1. Apify Yahoo Finance
+    if(priceManual) pill(`Prix ${priceManual} [MT5]`,"ok");
+    // 1. Apify Yahoo Finance — OHLC + DXY + US10Y + Prix proxy
     const tickers=[cfg.ticker||"GC=F", cfg.dxy, "^TNX"].filter(Boolean);
     setP(15,"Apify — démarrage du run...");
     const apData=await apifyRun(apKey, tickers);
     setP(60,"Apify — parsing des données...");
 
-    // Parse main ticker
+    // Parse main ticker + extract previous_close as price proxy
     const main=apData.find(d=>d.ticker===tickers[0]||d.symbol===tickers[0]);
     if(main?.history?.data?.length>0){
       const hist=main.history.data;
@@ -411,6 +395,21 @@ async function run(){
       D.atrDaily=calcATR(hist);
       D.reg=regLabel(atrM15, D.atrDaily);
       D.sz=SZ[D.reg]||SZ["INCONNU"];
+
+      // Prix auto depuis previous_close si non fourni manuellement
+      if(!D.price){
+        const pc=main.stock_info?.previous_close;
+        if(pc&&parseFloat(pc)>0){
+          D.price=Math.round(parseFloat(pc)*100)/100;
+          D.priceSource="APIFY-PC";
+          $("m-price").value=D.price;
+          $("m-price").style.borderColor="rgba(29,185,84,.4)";
+          pill(`Prix ${D.price} [APIFY]`,"ok");
+        } else {
+          pill("Prix N/A — saisis depuis MT5","er");
+          showErr(`⚠️ Prix auto indisponible. Saisis le prix depuis MT5.`);
+        }
+      }
       $("a-open").value=D.ohlcD1.open||"N/A";
       $("a-high").value=D.ohlcD1.high||"N/A";
       $("a-low").value=D.ohlcD1.low||"N/A";
