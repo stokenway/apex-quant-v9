@@ -158,7 +158,9 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 
 <!-- FILTRE F1 -->
 <div class="sec">
-  <div class="sec-t">// Filtre F1 — FinancialJuice <span class="sec-badge manual">MANUEL</span></div>
+  <div class="sec-t">// Filtre F1 <span class="sec-badge auto">AUTO — ForexFactory</span></div>
+  <div id="f1-auto-status" style="font-size:10px;color:var(--mu);letter-spacing:1px;margin-bottom:7px;min-height:14px">En attente de collecte...</div>
+  <div style="font-size:9px;color:var(--mu);margin-bottom:5px;letter-spacing:1px">Override manuel si besoin :</div>
   <div class="f1-row">
     <button class="f1-btn" id="f1-pass-btn" onclick="setF1(true)">✅ PASS</button>
     <button class="f1-btn" id="f1-fail-btn" onclick="setF1(false)">❌ ÉCHOUÉ</button>
@@ -244,6 +246,53 @@ function loadKeys(){
 function setP(p,m){$("pb").style.width=p+"%";$("pst").textContent=m}
 function pill(t,c){const d=$("pills");d.style.display="flex";const p=document.createElement("div");p.className="pill p-"+c;p.textContent=t;d.appendChild(p)}
 function showErr(m){$("errb").style.display="block";$("errb").innerHTML=m}
+
+// ── FOREXFACTORY F1 AUTO ──────────────────────────────────────────
+const HI_KW=["nfp","non-farm","cpi","inflation","fomc","fed rate","interest rate",
+             "ecb rate","boe rate","gdp","pce","jobless","unemployment","pmi flash",
+             "retail sales","ism","rba rate","boc rate","snb","rbnz"];
+
+async function fetchF1Auto(){
+  try{
+    const r=await fetch("https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+      {signal:AbortSignal.timeout(8000)});
+    if(!r.ok) throw new Error(r.status);
+    const data=await r.json();
+    const now=Date.now();
+    const hiEvs=[];
+
+    data.forEach(ev=>{
+      const imp=(ev.impact||"").toLowerCase();
+      const name=(ev.title||"").toLowerCase();
+      const isHi=imp==="high"||HI_KW.some(k=>name.includes(k));
+      if(!isHi) return;
+      let min=null,inWin=false;
+      if(ev.date){
+        try{
+          const ms=new Date(ev.date).getTime();
+          min=Math.round((ms-now)/60000);
+          inWin=min>=-30&&min<=30;
+        }catch(e){}
+      }
+      hiEvs.push({name:ev.title,country:ev.country||"",min,inWin,date:ev.date||""});
+    });
+
+    const blocked=hiEvs.filter(e=>e.inWin);
+    if(blocked.length>0){
+      return{pass:false,detail:`❌ F1 ÉCHOUÉ — ${blocked[0].name} dans ±30 min`,events:hiEvs};
+    }
+    const upcoming=hiEvs.filter(e=>e.min!==null&&e.min>30).sort((a,b)=>a.min-b.min);
+    const nxt=upcoming[0];
+    return{
+      pass:true,
+      detail:nxt?`✅ F1 PASS — Prochain: ${nxt.name} dans ${nxt.min} min`:
+                 "✅ F1 PASS — Aucun High Impact cette semaine",
+      events:hiEvs
+    };
+  }catch(e){
+    return{pass:null,detail:`⚠️ ForexFactory indisponible — ${e.message}`,events:[]};
+  }
+}
 
 // ── APIFY CALL ────────────────────────────────────────────────────
 async function apifyRun(apKey, tickers){
@@ -363,7 +412,6 @@ async function fetchUS10Y(){
 async function run(){
   const apKey=$("k-ap").value.trim();
   if(!apKey){alert("Remplis la clé Apify.");return}
-  if(f1State===null){alert("Indique le statut F1 (PASS ou ÉCHOUÉ).");return}
   const priceManual=parseFloat($("m-price").value)||null;
   const atrM15Manual=parseFloat($("m-atr15").value)||null;
 
@@ -379,11 +427,31 @@ async function run(){
 
   const ts=new Date().toISOString().slice(0,19)+"Z";
   const cfg=AM[sel];
-  D={sel,ts,price:priceManual,priceSource:"MT5",atrM15:atrM15Manual,atrM15Source:"MT5-CALC",ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1:f1State,f1Note:$("f1-note").value.trim()};
+  D={sel,ts,price:priceManual,priceSource:"MT5",atrM15:atrM15Manual,atrM15Source:"MT5-CALC",ohlcD1:{},atrDaily:null,dxy:null,us10y:null,realYield:null,reg:"INCONNU",sz:{},f1Note:$("f1-note").value.trim()};
 
   try{
     if(priceManual) pill(`Prix ${priceManual} [MT5]`,"ok");
     if(atrM15Manual) pill(`ATR M15 ${atrM15Manual} [MT5]`,"ok");
+
+    // 0. F1 auto — ForexFactory
+    setP(8,"F1 — ForexFactory...");
+    const f1Auto=await fetchF1Auto();
+    $("f1-auto-status").textContent=f1Auto.detail;
+    $("f1-auto-status").style.color=f1Auto.pass===true?"var(--gr)":f1Auto.pass===false?"var(--rd)":"var(--or)";
+    // Applique auto seulement si pas d'override manuel
+    if(f1State===null){
+      if(f1Auto.pass!==null){
+        f1State=f1Auto.pass;
+        $("f1-pass-btn").className="f1-btn"+(f1Auto.pass?" f1-pass":"");
+        $("f1-fail-btn").className="f1-btn"+(!f1Auto.pass?" f1-fail":"");
+        if(!$("f1-note").value&&f1Auto.detail){
+          const match=f1Auto.detail.match(/Prochain: (.+)/);
+          if(match) $("f1-note").value=match[1];
+        }
+      }
+    }
+    pill(f1Auto.pass===true?"F1 PASS [AUTO]":f1Auto.pass===false?"F1 ÉCHOUÉ [AUTO]":"F1 N/A",
+         f1Auto.pass===true?"ok":f1Auto.pass===false?"er":"wa");
     // 1. Apify Yahoo Finance — OHLC + DXY + US10Y + Prix proxy
     const tickers=[cfg.ticker||"GC=F", cfg.dxy, "^TNX"].filter(Boolean);
     setP(15,"Apify — démarrage du run...");
@@ -534,10 +602,13 @@ function buildBloc(){
   b+=`US10Y     : ${D.us10y??'N/A'}% [APIFY-YF]\n`;
   b+=`Real Yield: N/A\n\n`;
   b+=`[MODULE 1 — FILTRE F1]\n`;
-  if(D.f1){
+  const f1Pass=f1State!==null?f1State:null;
+  if(f1Pass===true){
     b+=D.f1Note?`✅ F1 PASS — Prochain: ${D.f1Note}\n`:`✅ F1 PASS — Aucun High Impact détecté\n`;
-  } else {
+  } else if(f1Pass===false){
     b+=`❌ F1 ÉCHOUÉ${D.f1Note?" — "+D.f1Note:""}\n`;
+  } else {
+    b+=`⚠️ F1 — Statut non déterminé (ForexFactory indisponible)\n`;
   }
   b+=`${"─".repeat(48)}\n`;
   b+=`analyse ${D.sel} @${D.price}`;
