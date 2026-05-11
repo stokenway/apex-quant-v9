@@ -265,17 +265,6 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
     <input type="text" class="proj-inp" id="k-proj" placeholder="https://claude.ai/project/..." autocomplete="off">
   </div>
 
-  <div class="kr" style="margin-top:6px">
-    <span class="kr-lbl">POLY</span>
-    <input type="password" class="kr-inp" id="k-poly" placeholder="Clé Polygon.io — test ATR M15 XAUUSD/NAS100/US30" autocomplete="off">
-    <button class="eyeb" onclick="tv('k-poly')">👁</button>
-  </div>
-  <div style="display:flex;gap:6px;margin-top:4px;align-items:center">
-    <div style="font-size:9px;color:var(--mu);letter-spacing:1px;flex:1">🧪 Test ATR M15 Or/Indices (si plan gratuit suffit)</div>
-    <button onclick="testPolygon()" style="background:transparent;border:1px solid var(--b2);color:var(--mu);padding:4px 10px;font-family:var(--mo);font-size:9px;cursor:pointer;letter-spacing:1px;white-space:nowrap" id="poly-test-btn">▶ Tester</button>
-  </div>
-  <div id="poly-result" style="font-size:9px;margin-top:4px;letter-spacing:1px;display:none;padding:6px;border:1px solid var(--b2);background:var(--bg)"></div>
-
   <button class="saveb" onclick="saveKeys()">💾 Sauvegarder la configuration</button>
   <div class="saved-ok" id="sv-ok">✅ Configuration sauvegardée</div>
 </div>
@@ -311,9 +300,9 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
   </div>
 </div>
 
-<!-- FILTRE F1 + F4 + F5 -->
+<!-- FILTRES F1 · F5 -->
 <div class="sec">
-  <div class="sec-t">// Filtres F1 · F4 · F5</div>
+  <div class="sec-t">// Filtres F1 · F5</div>
 
   <div style="font-size:8px;color:var(--gd);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">F1 — News <span class="tag tag-auto" style="margin-left:4px">AUTO Finnhub</span></div>
   <div class="f1-status" id="f1-status">En attente de collecte...</div>
@@ -324,11 +313,8 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
     <input type="text" class="f1-note" id="f1-note" placeholder="Prochain event (ex: FOMC 14h30)">
   </div>
 
-  <div style="font-size:8px;color:var(--gd);letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">F4 — Biais HTF <span class="tag tag-man" style="margin-left:4px">H4 + D1</span></div>
-  <div class="f4-row">
-    <button class="f4-btn" id="f4-bull" onclick="setF4('HAUSSIER')">📈 HAUSSIER</button>
-    <button class="f4-btn" id="f4-bear" onclick="setF4('BAISSIER')">📉 BAISSIER</button>
-    <button class="f4-btn" id="f4-neut" onclick="setF4('NEUTRE')">↔ NEUTRE</button>
+  <div style="font-size:8px;color:var(--mu);letter-spacing:1px;margin-top:6px">
+    F4 — Biais HTF : déterminé automatiquement par Claude via screenshot H4/D1
   </div>
 
   <div style="font-size:8px;color:var(--gd);letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">F5 — Circuit Breaker <span class="tag tag-auto" style="margin-left:4px">AUTO</span></div>
@@ -420,9 +406,9 @@ const $=id=>document.getElementById(id);
 
 // ── KILLZONE ──────────────────────────────────────────────────────
 const KILLZONES=[
-  {id:"asia",   name:"Asie",   start:2*60,  end:4*60,  label:"02h-04h FR"},
-  {id:"london", name:"London", start:9*60,  end:11*60, label:"09h-11h FR"},
-  {id:"ny",     name:"NY",     start:14*60, end:17*60, label:"14h-17h FR"},
+  {id:"asia",   name:"Asie",   start:2*60,   end:4*60,   label:"02h-04h FR", prepStart:1*60+45, optStart:0,   optEnd:30},
+  {id:"london", name:"London", start:9*60,   end:11*60,  label:"09h-11h FR", prepStart:8*60+45, optStart:0,   optEnd:30},
+  {id:"ny",     name:"NY",     start:14*60,  end:17*60,  label:"14h-17h FR", prepStart:13*60+45,optStart:60,  optEnd:120},
 ];
 
 function getFRMinutes(){
@@ -467,23 +453,26 @@ function updateKillzone(){
     $(`kz-${nextKZ.id}-st`).textContent=`dans ${minsToNext}min`;
   }
 
-  const f2Badge=$("kz-f2-badge");
-  const optEl=$("kz-optimal");
   if(activeKZ){
     f2Badge.textContent=`F2 ✅ ${activeKZ.name}`;
     f2Badge.className="kz-f2 pass";
     $("kz-next").textContent="";
-    // Optimal window
     const minsIntoKZ=totalMin-activeKZ.start;
-    if(minsIntoKZ<=10){
+    if(minsIntoKZ<0){
       optEl.className="kz-optimal analyse";
       optEl.textContent=`🔵 Fenêtre ANALYSE — Lance la collecte maintenant`;
-    } else if(minsIntoKZ<=40){
-      optEl.className="kz-optimal trade";
-      optEl.textContent=`🟢 Fenêtre SETUP OPTIMAL — 30 premières minutes (encore ${40-minsIntoKZ}min)`;
-    } else {
+    } else if(minsIntoKZ<activeKZ.optStart){
+      // NY: wait for 14h30 announcement
+      const minsToOpt=activeKZ.optStart-minsIntoKZ;
       optEl.className="kz-optimal wait";
+      optEl.textContent=`⏳ Attendre les annonces 14h30 — Fenêtre setup dans ${minsToOpt}min`;
+    } else if(minsIntoKZ<=activeKZ.optEnd){
+      const remaining=activeKZ.optEnd-minsIntoKZ;
+      optEl.className="kz-optimal trade";
+      optEl.textContent=`🟢 Fenêtre SETUP OPTIMAL — encore ${remaining}min`;
+    } else {
       const minsLeft=activeKZ.end-totalMin;
+      optEl.className="kz-optimal wait";
       optEl.textContent=`⚡ Killzone active — ${minsLeft}min restantes · Attendre setup clair`;
     }
   } else {
@@ -491,7 +480,6 @@ function updateKillzone(){
     f2Badge.className="kz-f2 fail";
     const hNext=Math.floor(minsToNext/60), mNext=minsToNext%60;
     $("kz-next").textContent=`Prochaine: ${nextKZ.name} dans ${hNext>0?hNext+"h":""}${mNext}min`;
-    // Pre-session window (15min before)
     if(minsToNext<=15){
       optEl.className="kz-optimal analyse";
       $(`kz-${nextKZ.id}`).classList.remove("next");
@@ -499,7 +487,8 @@ function updateKillzone(){
       optEl.textContent=`🔵 PRÉPARE L'ANALYSE — ${nextKZ.name} dans ${minsToNext}min · Lance la collecte`;
     } else {
       optEl.className="kz-optimal wait";
-      optEl.textContent=`Prochaine fenêtre optimale : ${nextKZ.name} — lance collecte à H-15min`;
+      const prepInfo=nextKZ.id==="ny"?"(analyse 13h45, setup après 14h30)":nextKZ.id==="london"?"(analyse 08h45)":"(analyse 01h45)";
+      optEl.textContent=`Prochaine: ${nextKZ.name} — Lance collecte à H-15min ${prepInfo}`;
     }
   }
 }
@@ -553,12 +542,6 @@ function updateATRField(){
   }
 }
 
-function setF4(bias){
-  f4State=bias;
-  $("f4-bull").className="f4-btn"+(bias==="HAUSSIER"?" bull":"");
-  $("f4-bear").className="f4-btn"+(bias==="BAISSIER"?" bear":"");
-  $("f4-neut").className="f4-btn"+(bias==="NEUTRE"?" neut":"");
-}
 
 // ── F5 CIRCUIT BREAKER ────────────────────────────────────────────
 const F5_KEY="aqv9_f5";
@@ -619,7 +602,6 @@ function saveKeys(){
   const fh=$("k-fh").value.trim(); if(fh) localStorage.setItem("aqv9_fh",fh);
   const td=$("k-td").value.trim(); if(td) localStorage.setItem("aqv9_td",td);
   const pr=$("k-proj").value.trim(); if(pr) localStorage.setItem("aqv9_proj",pr);
-  const poly=$("k-poly").value.trim(); if(poly) localStorage.setItem("aqv9_poly",poly);
   $("k-ap").classList.add("ok");
   if(fh) $("k-fh").classList.add("ok");
   if(td) $("k-td").classList.add("ok");
@@ -631,7 +613,6 @@ function loadKeys(){
   const fh=localStorage.getItem("aqv9_fh"); if(fh){$("k-fh").value=fh;$("k-fh").classList.add("ok")}
   const td=localStorage.getItem("aqv9_td"); if(td){$("k-td").value=td;$("k-td").classList.add("ok")}
   const pr=localStorage.getItem("aqv9_proj"); if(pr){$("k-proj").value=pr;$("k-proj").classList.add("ok")}
-  const poly=localStorage.getItem("aqv9_poly"); if(poly){$("k-poly").value=poly;}
   updateOpenBtn();
 }
 function updateOpenBtn(){
@@ -664,55 +645,6 @@ function regLabel(m15,daily){
   if(!m15||!daily) return"INCONNU";
   const r=m15/(daily/32);
   if(r<0.5)return"COMPRESSÉ";if(r<=1.5)return"NORMAL";if(r<=2.0)return"VOLATILE";return"EXTRÊME";
-}
-
-// ── POLYGON TEST ──────────────────────────────────────────────────
-const POLY_MAP={
-  XAUUSD:"C:XAUUSD",NAS100:"I:NDX",US30:"I:DJI",
-  EURUSD:"C:EURUSD",GBPUSD:"C:GBPUSD",USDJPY:"C:USDJPY",
-  BTCUSD:"X:BTCUSD",ETHUSD:"X:ETHUSD"
-};
-
-async function testPolygon(){
-  const polyKey=$("k-poly").value.trim()||localStorage.getItem("aqv9_poly")||"";
-  const res=$("poly-result"),btn=$("poly-test-btn");
-  if(!polyKey){res.style.display="block";res.style.color="var(--or)";res.textContent="⚠️ Saisis ta clé Polygon d'abord.";return}
-  btn.textContent="⏳...";btn.disabled=true;
-  res.style.display="block";res.style.color="var(--mu)";res.textContent="Appel Polygon en cours...";
-
-  const testAsset=["XAUUSD","NAS100","US30"].includes(sel)?sel:"XAUUSD";
-  const ticker=POLY_MAP[testAsset];
-  const to=new Date().toISOString().slice(0,10);
-  const from=new Date(Date.now()-2*24*3600*1000).toISOString().slice(0,10);
-
-  try{
-    const r=await fetch(`https://api.polygon.io/v2/aggs/ticker/${ticker}/range/15/minute/${from}/${to}?adjusted=true&sort=asc&limit=30&apiKey=${polyKey}`,
-      {signal:AbortSignal.timeout(10000)});
-    const d=await r.json();
-
-    if(d.status==="OK"&&d.results?.length>0){
-      const bars=d.results.map(b=>({h:b.h,l:b.l,o:b.o,c:b.c}));
-      const atr=calcATR(bars);
-      const last=bars[bars.length-1];
-      res.style.color="var(--gr)";
-      res.innerHTML=`✅ Polygon OK — ${testAsset} M15 | ${d.results.length} bougies<br>`+
-        `Dernière: O:${last.o} H:${last.h} L:${last.l} C:${last.c}<br>`+
-        `ATR M15 calculé: <strong>${atr}</strong><br>`+
-        (testAsset==="XAUUSD"?`🎯 ATR M15 XAUUSD automatisable !`:`✅ Données disponibles`);
-      localStorage.setItem("aqv9_poly",polyKey);
-      $("k-poly").style.borderColor="rgba(29,185,84,.4)";
-    } else if(d.status==="NOT_AUTHORIZED"||d.error){
-      res.style.color="var(--rd)";
-      res.textContent=`❌ Accès refusé: ${d.error||d.message||d.status}`;
-    } else {
-      res.style.color="var(--or)";
-      res.textContent=`⚠️ Aucune donnée: status=${d.status} — marché fermé ou plan gratuit insuffisant`;
-    }
-  }catch(e){
-    res.style.color=e.name==="TypeError"?"var(--rd)":"var(--or)";
-    res.textContent=e.name==="TypeError"?`❌ CORS bloqué — Polygon refuse les appels depuis GitHub.io`:`❌ ${e.message}`;
-  }
-  btn.textContent="▶ Tester";btn.disabled=false;
 }
 
 // ── APIFY ─────────────────────────────────────────────────────────
@@ -819,7 +751,6 @@ async function run(){
   const atrM15Manual=parseFloat($("m-atr15").value)||null;
   if(cfg.manualATR&&!priceManual){alert(`Prix live obligatoire pour ${sel} — lis la valeur Bid sur MT5.`);return}
   if(cfg.manualATR&&!atrM15Manual){alert(`ATR M15 obligatoire pour ${sel} — lis la valeur sur MT5 M15.`);return}
-  if(!f4State){alert("Indique le biais HTF (F4) : Haussier, Baissier ou Neutre.");return}
 
   const btn=$("run-btn");
   btn.disabled=true;btn.textContent="⏳ EN COURS...";
@@ -996,8 +927,8 @@ function buildBloc(){
   if(f1Pass===true) b+=D.f1Note?`✅ F1 PASS — Prochain: ${D.f1Note}\n`:`✅ F1 PASS — Aucun High Impact\n`;
   else if(f1Pass===false) b+=`❌ F1 ÉCHOUÉ${D.f1Note?" — "+D.f1Note:""}\n`;
   else b+=`⚠️ F1 — Statut non déterminé\n`;
-  // F4
-  b+=f4State?`${f4State==="HAUSSIER"?"✅":"❌" } F4 Biais HTF : ${f4State}\n`:`⚠️ F4 — Non renseigné\n`;
+  // F4 — déterminé par Claude via screenshot H4/D1
+  b+=`F4 — Biais HTF : à déterminer via screenshot H4/D1 fourni\n`;
   // F5
   const f5=loadF5();
   b+=f5.active?`❌ F5 CIRCUIT BREAKER ACTIF — ${f5.reason}\n`:`✅ F5 Circuit breaker inactif (KZ:${f5.tradesKZ} J:${f5.tradesDay} SL:${f5.slConsec} Loss:${f5.lossDay.toFixed(1)}%)\n`;
