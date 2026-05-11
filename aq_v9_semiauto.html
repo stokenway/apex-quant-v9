@@ -289,8 +289,8 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
   <div class="sec-t">// MetaTrader 5 <span class="tag tag-man" id="mt5-tag">MANUEL</span></div>
   <div class="g2">
     <div class="fld">
-      <label id="price-label">Prix Live <span style="font-size:7px;color:var(--gr)" id="price-hint">(auto si vide)</span></label>
-      <input type="number" id="m-price" placeholder="Auto via Apify" step="0.01">
+      <label id="price-label">Prix Live <span style="font-size:7px;color:var(--gr)" id="price-hint">(optionnel — screenshot ou saisie)</span></label>
+      <input type="number" id="m-price" placeholder="Optionnel — voir screenshot" step="0.01">
     </div>
     <div class="fld" id="atr15-field">
       <label id="atr15-label">ATR M15 (période 14)</label>
@@ -400,6 +400,8 @@ const AM={
 
 const SZ={COMPRESSÉ:{r:0.5,rr:"1:4",css:"compress"},NORMAL:{r:1.0,rr:"1:3",css:"normal"},VOLATILE:{r:0.5,rr:"1:2.5",css:"volatile"},EXTRÊME:{r:0.0,rr:"NO TRADE",css:"extreme"},INCONNU:{r:0.5,rr:"1:3",css:"unknown"}};
 const HI_KW=["nfp","non-farm","cpi","inflation","fomc","fed rate","interest rate","ecb rate","boe rate","gdp","pce","jobless","unemployment","pmi flash","retail sales","ism"];
+const F5_KEY="aqv9_f5";
+const F5_LIMITS={tradesKZ:2,tradesDay:3,slConsec:2,lossDay:3};
 
 let sel="XAUUSD", f1State=null, f4State=null, D={};
 const $=id=>document.getElementById(id);
@@ -517,10 +519,10 @@ function updateATRField(){
   const pLbl=$("price-label");
   // Prix : obligatoire pour Or/Indices, auto pour Forex/Crypto
   if(cfg.manualATR){
-    pHint.textContent="OBLIGATOIRE — lire sur MT5";
-    pHint.style.color="var(--or)";
-    $("m-price").placeholder="Ex: 4730.50";
-    $("m-price").style.borderColor="rgba(244,130,10,.35)";
+    pHint.textContent="optionnel — screenshot ou saisie";
+    pHint.style.color="var(--gr)";
+    $("m-price").placeholder="Optionnel — voir screenshot";
+    $("m-price").style.borderColor="";
   } else {
     pHint.textContent="auto si vide";
     pHint.style.color="var(--gr)";
@@ -544,8 +546,6 @@ function updateATRField(){
 
 
 // ── F5 CIRCUIT BREAKER ────────────────────────────────────────────
-const F5_KEY="aqv9_f5";
-const F5_LIMITS={tradesKZ:2,tradesDay:3,slConsec:2,lossDay:3};
 
 function loadF5(){
   const today=new Date().toISOString().slice(0,10);
@@ -749,7 +749,6 @@ async function run(){
 
   const priceManual=parseFloat($("m-price").value)||null;
   const atrM15Manual=parseFloat($("m-atr15").value)||null;
-  if(cfg.manualATR&&!priceManual){alert(`Prix live obligatoire pour ${sel} — lis la valeur Bid sur MT5.`);return}
   if(cfg.manualATR&&!atrM15Manual){alert(`ATR M15 obligatoire pour ${sel} — lis la valeur sur MT5 M15.`);return}
 
   const btn=$("run-btn");
@@ -912,7 +911,7 @@ function buildBloc(){
   let b=`[MODULE 0 — APEX QUANT V9 — ${D.ts}]\n`;
   b+=`${"─".repeat(50)}\n`;
   b+=`Actif    : ${AM[D.sel].label} (${D.sel})\n`;
-  b+=`Prix live: ${D.price??'N/A'} [${D.priceSource==="APIFY-PC"?"APIFY-PC":"MT5"}]\n\n`;
+  b+=`Prix live: ${D.price??'voir screenshot MT5'} [${D.price?(D.priceSource==="APIFY-PC"?"APIFY-PC":"MT5"):"SCREENSHOT"}]\n\n`;
   b+=`OHLC J-1 :\n`;
   b+=`  O:${d1.open??'N/A'}  H:${d1.high??'N/A'}  L:${d1.low??'N/A'}  C:${d1.close??'N/A'} [${D.ohlcSource??"APIFY-YF"}]\n\n`;
   b+=`ATR M15   : ${D.atrM15??'N/A'} [${D.atrM15Source==="TD-AUTO"?"TD-AUTO":"MT5-CALC"}]\n`;
