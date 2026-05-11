@@ -32,14 +32,21 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 .kz-slot{padding:7px;text-align:center;border:1px solid var(--b2);background:var(--bg)}
 .kz-slot.active{border-color:var(--gr);background:rgba(29,185,84,.06)}
 .kz-slot.next{border-color:var(--gd);background:rgba(212,160,23,.04)}
+.kz-slot.prep{border-color:rgba(74,158,255,.3);background:rgba(74,158,255,.04)}
 .kz-name{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mu)}
 .kz-slot.active .kz-name{color:var(--gr)}
 .kz-slot.next .kz-name{color:var(--g)}
+.kz-slot.prep .kz-name{color:var(--bl)}
 .kz-hours{font-size:9px;color:var(--mu);margin-top:2px}
 .kz-status{font-size:8px;margin-top:3px;letter-spacing:1px}
 .kz-slot.active .kz-status{color:var(--gr)}
 .kz-slot.next .kz-status{color:var(--g)}
+.kz-slot.prep .kz-status{color:var(--bl)}
 .kz-next-info{margin-top:6px;font-size:9px;color:var(--mu);letter-spacing:1px;text-align:center}
+.kz-optimal{margin-top:5px;font-size:9px;padding:5px 8px;text-align:center;letter-spacing:1px;border:1px solid}
+.kz-optimal.analyse{border-color:rgba(74,158,255,.3);color:var(--bl);background:rgba(74,158,255,.04)}
+.kz-optimal.trade{border-color:rgba(29,185,84,.3);color:var(--gr);background:rgba(29,185,84,.04)}
+.kz-optimal.wait{border-color:var(--b1);color:var(--mu)}
 
 /* SECTION */
 .sec{background:var(--bg2);border:1px solid var(--b1);padding:11px;margin-bottom:8px}
@@ -116,7 +123,7 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 .sizing-inp{background:var(--bg2);border:1px solid var(--b2);color:var(--tx);padding:5px 7px;font-family:var(--mo);font-size:11px;outline:none;width:100px}
 .sizing-inp:focus{border-color:var(--g)}
 
-/* F1 */
+/* F1/F4/F5 */
 .f1-status{font-size:10px;letter-spacing:1px;margin-bottom:6px;min-height:14px;padding:4px 0}
 .f1-row{display:flex;gap:5px;align-items:stretch}
 .f1-btn{flex:1;background:var(--bg);border:1px solid var(--b2);color:var(--mu);padding:7px 4px;font-family:var(--mo);font-size:9px;cursor:pointer;text-align:center;letter-spacing:1px;transition:all .1s}
@@ -125,6 +132,19 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 .f1-btn.f1-fail{border-color:var(--rd);background:rgba(230,57,70,.08);color:var(--rd)}
 .f1-note{flex:2;background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:6px 7px;font-family:var(--mo);font-size:9px;outline:none}
 .f1-note:focus{border-color:var(--g)}
+.f4-row{display:flex;gap:5px;margin-top:8px}
+.f4-btn{flex:1;background:var(--bg);border:1px solid var(--b2);color:var(--mu);padding:7px 4px;font-family:var(--mo);font-size:9px;cursor:pointer;text-align:center;letter-spacing:1px;transition:all .1s}
+.f4-btn:hover{border-color:var(--gd)}
+.f4-btn.bull{border-color:var(--gr);background:rgba(29,185,84,.08);color:var(--gr)}
+.f4-btn.bear{border-color:var(--rd);background:rgba(230,57,70,.08);color:var(--rd)}
+.f4-btn.neut{border-color:var(--or);background:rgba(244,130,10,.08);color:var(--or)}
+.f5-bar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.f5-item{background:var(--bg);border:1px solid var(--b2);padding:5px 8px;font-size:9px;letter-spacing:1px;flex:1;text-align:center;min-width:70px}
+.f5-item.warn{border-color:rgba(244,130,10,.4);color:var(--or)}
+.f5-item.danger{border-color:rgba(230,57,70,.4);color:var(--rd)}
+.f5-item.ok{border-color:rgba(29,185,84,.2);color:var(--gr)}
+.f5-reset{background:transparent;border:1px solid var(--b2);color:var(--mu);padding:5px 8px;font-family:var(--mo);font-size:8px;cursor:pointer;letter-spacing:1px;margin-top:4px;width:100%}
+.f5-reset:hover{color:var(--rd);border-color:rgba(230,57,70,.3)}
 
 /* RUN */
 .runb{width:100%;background:var(--g);border:none;color:var(--bg);padding:13px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:4px;cursor:pointer;margin-bottom:8px;transition:opacity .12s}
@@ -212,6 +232,7 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
     </div>
   </div>
   <div class="kz-next-info" id="kz-next"></div>
+  <div class="kz-optimal" id="kz-optimal">—</div>
 </div>
 
 <!-- CLÉS & CONFIG -->
@@ -279,7 +300,7 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
   <div class="sec-t">// MetaTrader 5 <span class="tag tag-man" id="mt5-tag">MANUEL</span></div>
   <div class="g2">
     <div class="fld">
-      <label>Prix Live <span style="font-size:7px;color:var(--gr)">(auto si vide)</span></label>
+      <label id="price-label">Prix Live <span style="font-size:7px;color:var(--gr)" id="price-hint">(auto si vide)</span></label>
       <input type="number" id="m-price" placeholder="Auto via Apify" step="0.01">
     </div>
     <div class="fld" id="atr15-field">
@@ -290,16 +311,29 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
   </div>
 </div>
 
-<!-- FILTRE F1 -->
+<!-- FILTRE F1 + F4 + F5 -->
 <div class="sec">
-  <div class="sec-t">// Filtre F1 <span class="tag tag-auto">AUTO — Finnhub</span></div>
+  <div class="sec-t">// Filtres F1 · F4 · F5</div>
+
+  <div style="font-size:8px;color:var(--gd);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">F1 — News <span class="tag tag-auto" style="margin-left:4px">AUTO Finnhub</span></div>
   <div class="f1-status" id="f1-status">En attente de collecte...</div>
-  <div style="font-size:8px;color:var(--mu);margin-bottom:5px;letter-spacing:1px">Override manuel si besoin :</div>
+  <div style="font-size:8px;color:var(--mu);margin-bottom:4px;letter-spacing:1px">Override manuel :</div>
   <div class="f1-row">
     <button class="f1-btn" id="f1-pass-btn" onclick="setF1(true)">✅ PASS</button>
     <button class="f1-btn" id="f1-fail-btn" onclick="setF1(false)">❌ ÉCHOUÉ</button>
     <input type="text" class="f1-note" id="f1-note" placeholder="Prochain event (ex: FOMC 14h30)">
   </div>
+
+  <div style="font-size:8px;color:var(--gd);letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">F4 — Biais HTF <span class="tag tag-man" style="margin-left:4px">H4 + D1</span></div>
+  <div class="f4-row">
+    <button class="f4-btn" id="f4-bull" onclick="setF4('HAUSSIER')">📈 HAUSSIER</button>
+    <button class="f4-btn" id="f4-bear" onclick="setF4('BAISSIER')">📉 BAISSIER</button>
+    <button class="f4-btn" id="f4-neut" onclick="setF4('NEUTRE')">↔ NEUTRE</button>
+  </div>
+
+  <div style="font-size:8px;color:var(--gd);letter-spacing:2px;text-transform:uppercase;margin:10px 0 5px">F5 — Circuit Breaker <span class="tag tag-auto" style="margin-left:4px">AUTO</span></div>
+  <div class="f5-bar" id="f5-bar"></div>
+  <button class="f5-reset" onclick="resetF5()">↺ Reset compteurs (nouveau jour)</button>
 </div>
 
 <!-- DONNÉES AUTO (après collecte) -->
@@ -381,7 +415,7 @@ const AM={
 const SZ={COMPRESSÉ:{r:0.5,rr:"1:4",css:"compress"},NORMAL:{r:1.0,rr:"1:3",css:"normal"},VOLATILE:{r:0.5,rr:"1:2.5",css:"volatile"},EXTRÊME:{r:0.0,rr:"NO TRADE",css:"extreme"},INCONNU:{r:0.5,rr:"1:3",css:"unknown"}};
 const HI_KW=["nfp","non-farm","cpi","inflation","fomc","fed rate","interest rate","ecb rate","boe rate","gdp","pce","jobless","unemployment","pmi flash","retail sales","ism"];
 
-let sel="XAUUSD", f1State=null, D={};
+let sel="XAUUSD", f1State=null, f4State=null, D={};
 const $=id=>document.getElementById(id);
 
 // ── KILLZONE ──────────────────────────────────────────────────────
@@ -434,15 +468,39 @@ function updateKillzone(){
   }
 
   const f2Badge=$("kz-f2-badge");
+  const optEl=$("kz-optimal");
   if(activeKZ){
     f2Badge.textContent=`F2 ✅ ${activeKZ.name}`;
     f2Badge.className="kz-f2 pass";
     $("kz-next").textContent="";
+    // Optimal window
+    const minsIntoKZ=totalMin-activeKZ.start;
+    if(minsIntoKZ<=10){
+      optEl.className="kz-optimal analyse";
+      optEl.textContent=`🔵 Fenêtre ANALYSE — Lance la collecte maintenant`;
+    } else if(minsIntoKZ<=40){
+      optEl.className="kz-optimal trade";
+      optEl.textContent=`🟢 Fenêtre SETUP OPTIMAL — 30 premières minutes (encore ${40-minsIntoKZ}min)`;
+    } else {
+      optEl.className="kz-optimal wait";
+      const minsLeft=activeKZ.end-totalMin;
+      optEl.textContent=`⚡ Killzone active — ${minsLeft}min restantes · Attendre setup clair`;
+    }
   } else {
     f2Badge.textContent="F2 ❌ Hors killzone";
     f2Badge.className="kz-f2 fail";
     const hNext=Math.floor(minsToNext/60), mNext=minsToNext%60;
     $("kz-next").textContent=`Prochaine: ${nextKZ.name} dans ${hNext>0?hNext+"h":""}${mNext}min`;
+    // Pre-session window (15min before)
+    if(minsToNext<=15){
+      optEl.className="kz-optimal analyse";
+      $(`kz-${nextKZ.id}`).classList.remove("next");
+      $(`kz-${nextKZ.id}`).classList.add("prep");
+      optEl.textContent=`🔵 PRÉPARE L'ANALYSE — ${nextKZ.name} dans ${minsToNext}min · Lance la collecte`;
+    } else {
+      optEl.className="kz-optimal wait";
+      optEl.textContent=`Prochaine fenêtre optimale : ${nextKZ.name} — lance collecte à H-15min`;
+    }
   }
 }
 
@@ -466,6 +524,20 @@ function updateATRField(){
   const lbl=$("atr15-label");
   const note=$("atr15-note");
   const inp=$("m-atr15");
+  const pHint=$("price-hint");
+  const pLbl=$("price-label");
+  // Prix : obligatoire pour Or/Indices, auto pour Forex/Crypto
+  if(cfg.manualATR){
+    pHint.textContent="OBLIGATOIRE — lire sur MT5";
+    pHint.style.color="var(--or)";
+    $("m-price").placeholder="Ex: 4730.50";
+    $("m-price").style.borderColor="rgba(244,130,10,.35)";
+  } else {
+    pHint.textContent="auto si vide";
+    pHint.style.color="var(--gr)";
+    $("m-price").placeholder="Auto via Apify";
+    $("m-price").style.borderColor="";
+  }
   if(cfg.manualATR){
     lbl.innerHTML='ATR M15 <span style="font-size:7px;color:var(--or)">MT5 obligatoire</span>';
     note.textContent="À lire sur MT5 M15";
@@ -479,6 +551,58 @@ function updateATRField(){
     inp.placeholder="Auto ou override";
     inp.style.borderColor="";
   }
+}
+
+function setF4(bias){
+  f4State=bias;
+  $("f4-bull").className="f4-btn"+(bias==="HAUSSIER"?" bull":"");
+  $("f4-bear").className="f4-btn"+(bias==="BAISSIER"?" bear":"");
+  $("f4-neut").className="f4-btn"+(bias==="NEUTRE"?" neut":"");
+}
+
+// ── F5 CIRCUIT BREAKER ────────────────────────────────────────────
+const F5_KEY="aqv9_f5";
+const F5_LIMITS={tradesKZ:2,tradesDay:3,slConsec:2,lossDay:3};
+
+function loadF5(){
+  const today=new Date().toISOString().slice(0,10);
+  const saved=JSON.parse(localStorage.getItem(F5_KEY)||"{}");
+  if(saved.date!==today) return{date:today,tradesKZ:0,tradesDay:0,slConsec:0,lossDay:0,active:false,reason:""};
+  return saved;
+}
+function saveF5(d){localStorage.setItem(F5_KEY,JSON.stringify(d))}
+
+function renderF5(){
+  const d=loadF5();
+  const bar=$("f5-bar");
+  const items=[
+    {label:`Trades KZ: ${d.tradesKZ}/${F5_LIMITS.tradesKZ}`,warn:d.tradesKZ>=F5_LIMITS.tradesKZ},
+    {label:`Trades/J: ${d.tradesDay}/${F5_LIMITS.tradesDay}`,warn:d.tradesDay>=F5_LIMITS.tradesDay},
+    {label:`SL consec: ${d.slConsec}/${F5_LIMITS.slConsec}`,warn:d.slConsec>=F5_LIMITS.slConsec},
+    {label:`Perte J: ${d.lossDay.toFixed(1)}%/${F5_LIMITS.lossDay}%`,warn:d.lossDay>=F5_LIMITS.lossDay},
+  ];
+  bar.innerHTML=items.map(i=>`<div class="f5-item ${i.warn?"danger":"ok"}">${i.label}</div>`).join("");
+  if(d.active) bar.innerHTML+=`<div class="f5-item danger" style="width:100%;flex-basis:100%">🛑 CB ACTIF: ${d.reason}</div>`;
+}
+
+function addTrade(slHit=false,lossPct=0){
+  const d=loadF5();
+  d.tradesKZ++;d.tradesDay++;
+  if(slHit){d.slConsec++;d.lossDay+=lossPct;}
+  else{d.slConsec=0;}
+  // Check triggers
+  if(d.tradesKZ>=F5_LIMITS.tradesKZ){d.active=true;d.reason="Max trades killzone atteint";}
+  if(d.tradesDay>=F5_LIMITS.tradesDay){d.active=true;d.reason="Max trades journaliers atteint";}
+  if(d.slConsec>=F5_LIMITS.slConsec){d.active=true;d.reason="2 SL consécutifs";}
+  if(d.lossDay>=F5_LIMITS.lossDay){d.active=true;d.reason="Perte journalière 3% atteinte";}
+  saveF5(d);renderF5();
+}
+
+function resetF5(){
+  if(!confirm("Reset les compteurs F5 pour aujourd'hui ?")) return;
+  const today=new Date().toISOString().slice(0,10);
+  saveF5({date:today,tradesKZ:0,tradesDay:0,slConsec:0,lossDay:0,active:false,reason:""});
+  renderF5();
 }
 
 function setF1(pass){
@@ -693,7 +817,9 @@ async function run(){
 
   const priceManual=parseFloat($("m-price").value)||null;
   const atrM15Manual=parseFloat($("m-atr15").value)||null;
+  if(cfg.manualATR&&!priceManual){alert(`Prix live obligatoire pour ${sel} — lis la valeur Bid sur MT5.`);return}
   if(cfg.manualATR&&!atrM15Manual){alert(`ATR M15 obligatoire pour ${sel} — lis la valeur sur MT5 M15.`);return}
+  if(!f4State){alert("Indique le biais HTF (F4) : Haussier, Baissier ou Neutre.");return}
 
   const btn=$("run-btn");
   btn.disabled=true;btn.textContent="⏳ EN COURS...";
@@ -870,6 +996,11 @@ function buildBloc(){
   if(f1Pass===true) b+=D.f1Note?`✅ F1 PASS — Prochain: ${D.f1Note}\n`:`✅ F1 PASS — Aucun High Impact\n`;
   else if(f1Pass===false) b+=`❌ F1 ÉCHOUÉ${D.f1Note?" — "+D.f1Note:""}\n`;
   else b+=`⚠️ F1 — Statut non déterminé\n`;
+  // F4
+  b+=f4State?`${f4State==="HAUSSIER"?"✅":"❌" } F4 Biais HTF : ${f4State}\n`:`⚠️ F4 — Non renseigné\n`;
+  // F5
+  const f5=loadF5();
+  b+=f5.active?`❌ F5 CIRCUIT BREAKER ACTIF — ${f5.reason}\n`:`✅ F5 Circuit breaker inactif (KZ:${f5.tradesKZ} J:${f5.tradesDay} SL:${f5.slConsec} Loss:${f5.lossDay.toFixed(1)}%)\n`;
   b+=`${"─".repeat(50)}\n`;
   b+=`analyse ${D.sel} @${D.price??'PRIX_MANQUANT'}`;
   return b;
@@ -947,6 +1078,7 @@ window.onload=function(){
   loadKeys();
   updateATRField();
   renderHistory();
+  renderF5();
 };
 </script>
 </body>
