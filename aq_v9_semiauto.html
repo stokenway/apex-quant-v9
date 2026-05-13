@@ -237,36 +237,16 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
 
 <!-- CLÉS & CONFIG -->
 <div class="sec">
-  <div class="sec-t">// Configuration <span class="tag tag-info">Sauvegardé localement</span></div>
+  <div class="sec-t">// Configuration <span class="tag tag-info">Clés intégrées</span></div>
+  <div class="key-note ok" style="margin-bottom:4px">✅ Apify · Finnhub · Twelve Data — clés intégrées</div>
+  <div class="key-note opt" style="margin-bottom:8px">🔶 ATR M15 auto Forex/Crypto · F1 auto · DXY + US10Y auto</div>
 
-  <div class="kr">
-    <span class="kr-lbl">Apify</span>
-    <input type="password" class="kr-inp" id="k-ap" placeholder="apify_api_..." autocomplete="off">
-    <button class="eyeb" onclick="tv('k-ap')">👁</button>
-  </div>
-  <div class="key-note ok">✅ Prix + OHLC + DXY + US10Y — via Apify (automatique)</div>
-
-  <div class="kr">
-    <span class="kr-lbl">Finnhub</span>
-    <input type="password" class="kr-inp" id="k-fh" placeholder="Clé Finnhub — calendrier F1 auto" autocomplete="off">
-    <button class="eyeb" onclick="tv('k-fh')">👁</button>
-  </div>
-  <div class="key-note ok">✅ Filtre F1 — calendrier économique automatique</div>
-
-  <div class="kr" style="margin-top:4px">
-    <span class="kr-lbl">TD</span>
-    <input type="password" class="kr-inp" id="k-td" placeholder="Clé Twelve Data — ATR M15 Forex/Crypto" autocomplete="off">
-    <button class="eyeb" onclick="tv('k-td')">👁</button>
-  </div>
-  <div class="key-note opt">🔶 ATR M15 auto pour EURUSD / GBPUSD / USDJPY / BTC / ETH</div>
-
-  <div style="font-size:9px;color:var(--bl);margin:8px 0 4px;letter-spacing:1px">🔗 URL Claude Project (pour bouton d'ouverture) :</div>
+  <div style="font-size:9px;color:var(--bl);margin:0 0 4px;letter-spacing:1px">🔗 URL Claude Project :</div>
   <div class="proj-row">
     <input type="text" class="proj-inp" id="k-proj" placeholder="https://claude.ai/project/..." autocomplete="off">
   </div>
-
-  <button class="saveb" onclick="saveKeys()">💾 Sauvegarder la configuration</button>
-  <div class="saved-ok" id="sv-ok">✅ Configuration sauvegardée</div>
+  <button class="saveb" onclick="saveProj()" style="margin-top:4px">💾 Sauvegarder URL projet</button>
+  <div class="saved-ok" id="sv-ok">✅ URL sauvegardée</div>
 </div>
 
 <!-- ACTIF -->
@@ -296,6 +276,17 @@ body{font-family:var(--mo);background:var(--bg);color:var(--tx);min-height:100vh
       <label id="atr15-label">ATR M15 (période 14)</label>
       <input type="number" id="m-atr15" placeholder="ex: 8.5" step="0.01">
       <div class="fld-note man" id="atr15-note">À lire sur MT5 M15</div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="fld">
+      <label>ATR Daily <span style="font-size:7px;color:var(--or)">Manuel MT5 D1 (prioritaire)</span></label>
+      <input type="number" id="m-atrd" placeholder="ex: 96.46" step="0.01">
+      <div class="fld-note man">Écrase la valeur Apify/TD si renseigné</div>
+    </div>
+    <div class="fld">
+      <label style="font-size:8px;color:var(--mu)">Régime calculé</label>
+      <input type="text" id="m-regime-preview" readonly placeholder="—" style="font-size:10px">
     </div>
   </div>
 </div>
@@ -456,6 +447,8 @@ function updateKillzone(){
   }
 
   if(activeKZ){
+    const f2Badge=$("kz-f2-badge");
+    const optEl=$("kz-optimal");
     f2Badge.textContent=`F2 ✅ ${activeKZ.name}`;
     f2Badge.className="kz-f2 pass";
     $("kz-next").textContent="";
@@ -478,6 +471,8 @@ function updateKillzone(){
       optEl.textContent=`⚡ Killzone active — ${minsLeft}min restantes · Attendre setup clair`;
     }
   } else {
+    const f2Badge=$("kz-f2-badge");
+    const optEl=$("kz-optimal");
     f2Badge.textContent="F2 ❌ Hors killzone";
     f2Badge.className="kz-f2 fail";
     const hNext=Math.floor(minsToNext/60), mNext=minsToNext%60;
@@ -595,24 +590,25 @@ function setF1(pass){
 }
 
 // ── KEYS ──────────────────────────────────────────────────────────
-function saveKeys(){
-  const ap=$("k-ap").value.trim();
-  if(!ap){alert("Clé Apify obligatoire.");return}
-  localStorage.setItem("aqv9_ap",ap);
-  const fh=$("k-fh").value.trim(); if(fh) localStorage.setItem("aqv9_fh",fh);
-  const td=$("k-td").value.trim(); if(td) localStorage.setItem("aqv9_td",td);
-  const pr=$("k-proj").value.trim(); if(pr) localStorage.setItem("aqv9_proj",pr);
-  $("k-ap").classList.add("ok");
-  if(fh) $("k-fh").classList.add("ok");
-  if(td) $("k-td").classList.add("ok");
-  if(pr){$("k-proj").classList.add("ok");updateOpenBtn();}
-  $("sv-ok").style.display="block";setTimeout(()=>$("sv-ok").style.display="none",2500);
+// ── INTEGRATED KEYS (obfuscated) ─────────────────────────────────
+function _k(e){return atob(e)}
+const _KEYS={
+  ap:_k("YXBpZnlfYXBpXzZ6bTZ3Q3lnUUk4NXR1RzRtTEdtSXlVV1ljNTdKMzR1ZWhGNg=="),
+  fh:_k("ZDNmaTJycHIwMXFvbGtuZGJxZjBkM2ZpMnJwcjAxcW9sa25kYnFmZw=="),
+  td:_k("OGYyNjY4YTIxNGE4NGFjM2I2ZmRhZjFmYzFjNTRiZGE=")
+};
+
+function getKey(name){return _KEYS[name]||""}
+function saveProj(){
+  const pr=$("k-proj").value.trim();
+  if(pr) localStorage.setItem("aqv9_proj",pr);
+  $("k-proj").classList.add("ok");
+  $("sv-ok").style.display="block";
+  setTimeout(()=>$("sv-ok").style.display="none",2500);
 }
 function loadKeys(){
-  const ap=localStorage.getItem("aqv9_ap"); if(ap){$("k-ap").value=ap;$("k-ap").classList.add("ok")}
-  const fh=localStorage.getItem("aqv9_fh"); if(fh){$("k-fh").value=fh;$("k-fh").classList.add("ok")}
-  const td=localStorage.getItem("aqv9_td"); if(td){$("k-td").value=td;$("k-td").classList.add("ok")}
-  const pr=localStorage.getItem("aqv9_proj"); if(pr){$("k-proj").value=pr;$("k-proj").classList.add("ok")}
+  const pr=localStorage.getItem("aqv9_proj");
+  if(pr){$("k-proj").value=pr;$("k-proj").classList.add("ok")}
   updateOpenBtn();
 }
 function updateOpenBtn(){
@@ -741,14 +737,14 @@ function calcSizing(){
 
 // ── MAIN RUN ──────────────────────────────────────────────────────
 async function run(){
-  const apKey=$("k-ap").value.trim();
-  if(!apKey){alert("Clé Apify obligatoire.");return}
-  const fhKey=localStorage.getItem("aqv9_fh")||"";
-  const tdKey=localStorage.getItem("aqv9_td")||"";
+  const apKey=getKey("ap");
+  const fhKey=getKey("fh");
+  const tdKey=getKey("td");
   const cfg=AM[sel];
 
   const priceManual=parseFloat($("m-price").value)||null;
   const atrM15Manual=parseFloat($("m-atr15").value)||null;
+  const atrDailyManual=parseFloat($("m-atrd").value)||null;
   if(cfg.manualATR&&!atrM15Manual){alert(`ATR M15 obligatoire pour ${sel} — lis la valeur sur MT5 M15.`);return}
 
   const btn=$("run-btn");
@@ -763,7 +759,7 @@ async function run(){
 
   const ts=new Date().toISOString().slice(0,19)+"Z";
   D={sel,ts,price:priceManual,priceSource:"MT5",atrM15:atrM15Manual,atrM15Source:"MT5-CALC",
-     ohlcD1:{},atrDaily:null,dxy:null,us10y:null,reg:"INCONNU",sz:SZ["INCONNU"],f1Note:$("f1-note").value.trim()};
+     atrDailyManual,ohlcD1:{},atrDaily:null,dxy:null,us10y:null,reg:"INCONNU",sz:SZ["INCONNU"],f1Note:$("f1-note").value.trim()};
 
   if(priceManual) pill(`Prix ${priceManual} [MT5]`,"ok");
   if(atrM15Manual) pill(`ATR M15 ${atrM15Manual} [MT5]`,"ok");
@@ -874,10 +870,21 @@ async function run(){
       pill("ATR M15: clé TD manquante","wa");
     }
 
+    // ATR Daily manual override (prioritaire sur TD/Apify)
+    if(atrDailyManual){
+      D.atrDaily=atrDailyManual;
+      D.atrDailySource="MT5-CALC";
+      $("a-atrd").value=atrDailyManual;
+      $("a-atrd").classList.add("auto-ok");
+      pill(`ATR D ${atrDailyManual} [MT5]`,"ok");
+    }
+
     // 4. Régime final
     D.reg=regLabel(D.atrM15,D.atrDaily);
     D.sz=SZ[D.reg]||SZ["INCONNU"];
     updateRegimeUI(D.reg,D.atrM15,D.atrDaily);
+    $("m-regime-preview").value=D.reg;
+    $("m-regime-preview").style.color=D.reg==="NORMAL"?"var(--gr)":D.reg==="VOLATILE"?"var(--or)":"var(--rd)";
     pill(`Régime ${D.reg}`,D.reg==="EXTRÊME"?"er":D.reg==="VOLATILE"?"wa":D.reg==="NORMAL"?"ok":"p-ok");
 
     // 5. Build bloc
@@ -1009,6 +1016,22 @@ window.onload=function(){
   updateATRField();
   renderHistory();
   renderF5();
+  // Live regime preview
+  ["m-atr15","m-atrd"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener("input",()=>{
+      const m15=parseFloat($("m-atr15")?.value)||null;
+      const daily=parseFloat($("m-atrd")?.value)||null;
+      const prev=$("m-regime-preview");
+      if(m15&&daily){
+        const reg=regLabel(m15,daily);
+        prev.value=reg;
+        prev.style.color=reg==="NORMAL"?"var(--gr)":reg==="VOLATILE"?"var(--or)":"var(--rd)";
+      } else {
+        prev.value="—";prev.style.color="var(--mu)";
+      }
+    });
+  });
 };
 </script>
 </body>
