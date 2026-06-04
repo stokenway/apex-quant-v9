@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V9 PLAYBOOK</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+:root{
+  --bg:#05050d;--bg2:#08080f;--bg3:#0c0c18;--b1:#141428;--b2:#1e1e38;--b3:#282848;
+  --g:#d4a017;--gd:#8a6010;--gl:rgba(212,160,23,.08);--gs:rgba(212,160,23,.03);
+  --gr:#16c76a;--rd:#e63946;--or:#f4820a;--bl:#4a9eff;--pu:#9b59b6;--cy:#00bcd4;
+  --tx:#c8c8e0;--mu:#4a4a6a;--sm:#6a6a8a;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--display:'Bebas Neue',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100vh;font-size:12px}
+
+/* ── HEADER ── */
+.hdr{
+  background:linear-gradient(135deg,var(--bg2) 0%,var(--bg3) 100%);
+  border-bottom:1px solid var(--b2);
+  padding:20px 16px 16px;
+  position:sticky;top:0;z-index:100;
+}
+.hdr-inner{max-width:800px;margin:0 auto}
+.logo-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.logo{font-family:var(--display);font-size:28px;color:var(--g);letter-spacing:5px;line-height:1}
+.logo-sub{font-family:var(--mono);font-size:9px;color:var(--mu);letter-spacing:3px;text-transform:uppercase}
+.project-btn{
+  background:transparent;border:1px solid var(--b2);color:var(--mu);
+  padding:6px 12px;font-family:var(--mono);font-size:9px;letter-spacing:1px;
+  cursor:pointer;text-decoration:none;display:inline-block;transition:all .12s;
+}
+.project-btn:hover{border-color:var(--g);color:var(--g)}
+
+/* NAV TABS */
+.nav{display:flex;gap:2px;overflow-x:auto;padding-bottom:2px}
+.nav::-webkit-scrollbar{height:2px}
+.nav::-webkit-scrollbar-track{background:transparent}
+.nav::-webkit-scrollbar-thumb{background:var(--b2)}
+.tab{
+  white-space:nowrap;padding:7px 14px;
+  font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  cursor:pointer;border:1px solid transparent;color:var(--mu);background:transparent;
+  transition:all .12s;border-bottom:none;
+}
+.tab:hover{color:var(--g)}
+.tab.on{color:var(--g);border-color:var(--b2);border-bottom:1px solid var(--bg);background:var(--bg);position:relative;top:1px}
+
+/* ── MAIN ── */
+.main{max-width:800px;margin:0 auto;padding:16px}
+
+/* SECTION */
+.section{display:none}
+.section.on{display:block}
+
+/* PROCESS CARD */
+.pcard{background:var(--bg2);border:1px solid var(--b2);margin-bottom:12px;overflow:hidden}
+.pcard-hdr{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  cursor:pointer;background:var(--gs);
+}
+.pcard-hdr:hover{background:var(--gl)}
+.pcard-icon{font-size:16px;width:24px;text-align:center}
+.pcard-title{font-family:var(--display);font-size:16px;color:var(--g);letter-spacing:2px;flex:1}
+.pcard-badge{font-family:var(--mono);font-size:8px;padding:2px 7px;border:1px solid;letter-spacing:1px}
+.pcard-badge.time{color:var(--bl);border-color:rgba(74,158,255,.3)}
+.pcard-badge.session{color:var(--or);border-color:rgba(244,130,10,.3)}
+.pcard-badge.daily{color:var(--gr);border-color:rgba(22,199,106,.3)}
+.pcard-toggle{color:var(--mu);font-family:var(--mono);font-size:12px;transition:transform .15s}
+.pcard-toggle.open{transform:rotate(90deg)}
+
+.pcard-body{display:none;padding:14px;border-top:1px solid var(--b1)}
+.pcard-body.open{display:block}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+.step{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:8px 10px;cursor:pointer;
+  border-left:2px solid var(--b2);transition:border-color .1s;
+}
+.step:hover{border-left-color:var(--gd);background:var(--gs)}
+.step.done{border-left-color:var(--gr);opacity:.6}
+.step-n{
+  font-family:var(--mono);font-size:9px;color:var(--mu);
+  min-width:18px;padding-top:1px;letter-spacing:1px;
+}
+.step.done .step-n{color:var(--gr)}
+.step-check{
+  width:14px;height:14px;border:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;flex-shrink:0;margin-top:1px;transition:all .1s;
+}
+.step.done .step-check{border-color:var(--gr);background:rgba(22,199,106,.1);color:var(--gr)}
+.step-content{flex:1}
+.step-title{font-size:12px;color:var(--tx);line-height:1.4;margin-bottom:2px}
+.step.done .step-title{text-decoration:line-through;color:var(--mu)}
+.step-detail{font-family:var(--mono);font-size:9px;color:var(--mu);line-height:1.6;margin-top:4px}
+.step-detail code{
+  background:var(--b1);padding:2px 5px;
+  font-size:9px;color:var(--g);display:inline-block;margin:1px 0;
+}
+
+/* RULE BOX */
+.rule-box{
+  background:var(--bg3);border-left:2px solid var(--g);
+  padding:8px 10px;margin-bottom:8px;
+  font-family:var(--mono);font-size:9px;color:var(--sm);line-height:1.7;
+}
+.rule-box strong{color:var(--g)}
+
+/* REMINDER / WARNING */
+.reminder{
+  background:rgba(212,160,23,.04);border:1px solid rgba(212,160,23,.15);
+  padding:8px 10px;font-family:var(--mono);font-size:9px;
+  color:var(--g);line-height:1.6;margin-bottom:8px;
+}
+.warning{
+  background:rgba(230,57,70,.04);border:1px solid rgba(230,57,70,.15);
+  padding:8px 10px;font-family:var(--mono);font-size:9px;
+  color:var(--rd);line-height:1.6;margin-bottom:8px;
+}
+
+/* RESET BTN */
+.reset-btn{
+  background:transparent;border:1px solid var(--b2);color:var(--mu);
+  padding:5px 12px;font-family:var(--mono);font-size:9px;letter-spacing:1px;
+  cursor:pointer;
+}
+.reset-btn:hover{color:var(--rd);border-color:rgba(230,57,70,.3)}
+
+/* PROGRESS */
+.progress-bar{height:2px;background:var(--b1);margin-bottom:12px}
+.progress-fill{height:100%;background:var(--g);transition:width .3s}
+.progress-txt{font-family:var(--mono);font-size:9px;color:var(--mu);margin-bottom:4px;letter-spacing:1px}
+
+/* REFERENCE CARDS */
+.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.ref-card{background:var(--bg3);border:1px solid var(--b1);padding:10px}
+.ref-card-t{font-family:var(--mono);font-size:8px;color:var(--g);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.ref-item{font-family:var(--mono);font-size:9px;color:var(--sm);line-height:1.8;padding:2px 0;border-bottom:1px solid var(--b1)}
+.ref-item:last-child{border:none}
+.ref-item span{color:var(--tx);float:right}
+
+/* PAIR TABLE */
+.pair-table{width:100%;border-collapse:collapse;margin-bottom:10px}
+.pair-table th{font-family:var(--mono);font-size:8px;color:var(--mu);letter-spacing:1px;text-transform:uppercase;padding:5px 8px;text-align:left;border-bottom:1px solid var(--b2)}
+.pair-table td{padding:6px 8px;border-bottom:1px solid var(--b1);font-family:var(--mono);font-size:10px}
+.pair-table tr:hover td{background:var(--gs)}
+.badge-s{font-size:7px;padding:1px 5px;border:1px solid;letter-spacing:1px}
+.badge-london{color:var(--bl);border-color:rgba(74,158,255,.3)}
+.badge-ny{color:var(--or);border-color:rgba(244,130,10,.3)}
+.badge-asie{color:var(--pu);border-color:rgba(155,89,182,.3)}
+
+.foot{text-align:center;padding:20px;font-family:var(--mono);font-size:9px;color:var(--b2);letter-spacing:1px}
+
+@media(max-width:580px){
+  .ref-grid{grid-template-columns:1fr}
+  .logo{font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-inner">
+    <div class="logo-row">
+      <div>
+        <div class="logo">V9 PLAYBOOK</div>
+        <div class="logo-sub">Apex Quant V9 · Process & Routines</div>
+      </div>
+      <a class="project-btn" id="proj-link" href="https://claude.ai" target="_blank">↗ Ouvrir Project Trading</a>
+    </div>
+    <div class="nav" id="nav">
+      <button class="tab on" onclick="showSection('soir',this)">🌙 Routine Soir</button>
+      <button class="tab" onclick="showSection('london',this)">🇬🇧 London</button>
+      <button class="tab" onclick="showSection('ny',this)">🇺🇸 NY</button>
+      <button class="tab" onclick="showSection('position',this)">📊 Position</button>
+      <button class="tab" onclick="showSection('postmortem',this)">📝 Post-Mortem</button>
+      <button class="tab" onclick="showSection('reference',this)">📐 Référence</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════
+     ROUTINE SOIR
+══════════════════════════════════════════════════ -->
+<div class="section on" id="s-soir">
+
+  <div class="reminder">
+    🌙 À faire chaque soir (20h-22h) — 15 minutes maximum<br>
+    Prépare les setups du lendemain à tête reposée, pas sous pression.
+  </div>
+
+  <!-- SCAN RAPIDE -->
+  <div class="pcard" id="pc-scan">
+    <div class="pcard-hdr" onclick="toggleCard('scan')">
+      <span class="pcard-icon">🔍</span>
+      <span class="pcard-title">ÉTAPE 1 — SCAN RAPIDE D1</span>
+      <span class="pcard-badge time">~5 min</span>
+      <span class="pcard-toggle" id="toggle-scan">▶</span>
+    </div>
+    <div class="pcard-body" id="body-scan">
+      <div class="rule-box">
+        <strong>Règle du scan :</strong> 30 secondes par paire. 1 seule question :<br>
+        "Le prix est-il proche d'un niveau important ou en plein vide ?"<br>
+        → <strong>Proche d'un niveau</strong> = garder · → <strong>Milieu de rien</strong> = ignorer
+      </div>
+      <div class="progress-txt" id="scan-prog">0/8 paires scannées</div>
+      <div class="progress-bar"><div class="progress-fill" id="scan-bar" style="width:0%"></div></div>
+      <div class="steps" id="scan-steps">
+        <!-- Generated by JS -->
+      </div>
+      <button class="reset-btn" onclick="resetSection('scan')">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- SHORTLIST -->
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('short')">
+      <span class="pcard-icon">🎯</span>
+      <span class="pcard-title">ÉTAPE 2 — SHORTLIST & SCREENSHOTS</span>
+      <span class="pcard-badge time">~5 min</span>
+      <span class="pcard-toggle" id="toggle-short">▶</span>
+    </div>
+    <div class="pcard-body" id="body-short">
+      <div class="steps" id="short-steps"></div>
+      <button class="reset-btn" onclick="resetSection('short')">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- ANALYSE CLAUDE -->
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('analyse')">
+      <span class="pcard-icon">🤖</span>
+      <span class="pcard-title">ÉTAPE 3 — ANALYSE CLAUDE V9</span>
+      <span class="pcard-badge time">~5 min</span>
+      <span class="pcard-toggle" id="toggle-analyse">▶</span>
+    </div>
+    <div class="pcard-body" id="body-analyse">
+      <div class="steps" id="analyse-steps"></div>
+      <button class="reset-btn" onclick="resetSection('analyse')">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- ALERTES -->
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('alertes')">
+      <span class="pcard-icon">🔔</span>
+      <span class="pcard-title">ÉTAPE 4 — ALERTES TRADINGVIEW</span>
+      <span class="pcard-badge time">~3 min</span>
+      <span class="pcard-toggle" id="toggle-alertes">▶</span>
+    </div>
+    <div class="pcard-body" id="body-alertes">
+      <div class="steps" id="alertes-steps"></div>
+      <button class="reset-btn" onclick="resetSection('alertes')">↺ Reset</button>
+    </div>
+  </div>
+
+</div><!-- /soir -->
+
+<!-- ══════════════════════════════════════════════════
+     LONDON
+══════════════════════════════════════════════════ -->
+<div class="section" id="s-london">
+  <div class="reminder">🇬🇧 London Killzone : 09h00-11h00 FR · Fenêtre optimale setup : 09h00-09h30</div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('lon1')">
+      <span class="pcard-icon">⏰</span>
+      <span class="pcard-title">08H50 — PRÉ-ANALYSE</span>
+      <span class="pcard-badge session">Avant ouverture</span>
+      <span class="pcard-toggle" id="toggle-lon1">▶</span>
+    </div>
+    <div class="pcard-body" id="body-lon1">
+      <div class="steps" id="lon1-steps"></div>
+      <button class="reset-btn" onclick="resetSection('lon1')">↺ Reset</button>
+    </div>
+  </div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('lon2')">
+      <span class="pcard-icon">📈</span>
+      <span class="pcard-title">09H00 — SETUP & ENTRÉE</span>
+      <span class="pcard-badge session">09h00-09h30 optimal</span>
+      <span class="pcard-toggle" id="toggle-lon2">▶</span>
+    </div>
+    <div class="pcard-body" id="body-lon2">
+      <div class="steps" id="lon2-steps"></div>
+      <button class="reset-btn" onclick="resetSection('lon2')">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     NY
+══════════════════════════════════════════════════ -->
+<div class="section" id="s-ny">
+  <div class="reminder">🇺🇸 NY Killzone : 14h00-17h00 FR · Fenêtre optimale setup : 15h00-17h00 (post-annonces 14h30)</div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ny1')">
+      <span class="pcard-icon">⏰</span>
+      <span class="pcard-title">13H45 — PRÉ-ANALYSE NY</span>
+      <span class="pcard-badge session">Avant ouverture</span>
+      <span class="pcard-toggle" id="toggle-ny1">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ny1">
+      <div class="steps" id="ny1-steps"></div>
+      <button class="reset-btn" onclick="resetSection('ny1')">↺ Reset</button>
+    </div>
+  </div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ny2')">
+      <span class="pcard-icon">📢</span>
+      <span class="pcard-title">14H30 — ANNONCES MACRO</span>
+      <span class="pcard-badge session">Attendre digestion</span>
+      <span class="pcard-toggle" id="toggle-ny2">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ny2">
+      <div class="steps" id="ny2-steps"></div>
+      <button class="reset-btn" onclick="resetSection('ny2')">↺ Reset</button>
+    </div>
+  </div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ny3')">
+      <span class="pcard-icon">📈</span>
+      <span class="pcard-title">15H00 — SETUP & ENTRÉE NY</span>
+      <span class="pcard-badge session">15h00-17h00 optimal</span>
+      <span class="pcard-toggle" id="toggle-ny3">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ny3">
+      <div class="steps" id="ny3-steps"></div>
+      <button class="reset-btn" onclick="resetSection('ny3')">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     GESTION POSITION
+══════════════════════════════════════════════════ -->
+<div class="section" id="s-position">
+  <div class="reminder">📊 Applique ce process dès qu'un trade est ouvert</div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ph0')">
+      <span class="pcard-icon">🛡️</span>
+      <span class="pcard-title">PHASE 0 — PROTECTION</span>
+      <span class="pcard-badge daily">Entrée → TP1</span>
+      <span class="pcard-toggle" id="toggle-ph0">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ph0">
+      <div class="steps" id="ph0-steps"></div>
+    </div>
+  </div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ph1')">
+      <span class="pcard-icon">✅</span>
+      <span class="pcard-title">PHASE 1 — TP1 ATTEINT</span>
+      <span class="pcard-badge daily">Sécurisation</span>
+      <span class="pcard-toggle" id="toggle-ph1">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ph1">
+      <div class="steps" id="ph1-steps"></div>
+    </div>
+  </div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ph2')">
+      <span class="pcard-icon">🚀</span>
+      <span class="pcard-title">PHASE 2 — TP2 ATTEINT</span>
+      <span class="pcard-badge daily">Extension</span>
+      <span class="pcard-toggle" id="toggle-ph2">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ph2">
+      <div class="steps" id="ph2-steps"></div>
+    </div>
+  </div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('ph3')">
+      <span class="pcard-icon">🎯</span>
+      <span class="pcard-title">PHASE 3 — TRAILING</span>
+      <span class="pcard-badge daily">TP2 dépassé</span>
+      <span class="pcard-toggle" id="toggle-ph3">▶</span>
+    </div>
+    <div class="pcard-body" id="body-ph3">
+      <div class="steps" id="ph3-steps"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     POST-MORTEM
+══════════════════════════════════════════════════ -->
+<div class="section" id="s-postmortem">
+  <div class="reminder">📝 À faire immédiatement après clôture du trade — quand les émotions sont encore fraîches</div>
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('pm1')">
+      <span class="pcard-icon">📋</span>
+      <span class="pcard-title">POST-MORTEM V9</span>
+      <span class="pcard-badge time">~5 min</span>
+      <span class="pcard-toggle" id="toggle-pm1">▶</span>
+    </div>
+    <div class="pcard-body" id="body-pm1">
+      <div class="steps" id="pm1-steps"></div>
+      <button class="reset-btn" onclick="resetSection('pm1')">↺ Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     RÉFÉRENCE
+══════════════════════════════════════════════════ -->
+<div class="section" id="s-reference">
+
+  <div class="ref-grid">
+    <div class="ref-card">
+      <div class="ref-card-t">Régimes ATR</div>
+      <div class="ref-item">COMPRESSÉ &lt;0.5x<span style="color:var(--bl)">0.5% · RR 1:4</span></div>
+      <div class="ref-item">NORMAL 0.5-1.5x<span style="color:var(--gr)">1% · RR 1:3</span></div>
+      <div class="ref-item">VOLATILE 1.5-2.0x<span style="color:var(--or)">0.5% · RR 1:2.5</span></div>
+      <div class="ref-item">TRÈS VOL. 2.0-2.5x<span style="color:var(--or)">0.25% · RR 1:2</span></div>
+      <div class="ref-item">EXTRÊME &gt;2.5x<span style="color:var(--rd)">NO TRADE</span></div>
+    </div>
+    <div class="ref-card">
+      <div class="ref-card-t">Killzones (FR)</div>
+      <div class="ref-item">Asie<span style="color:var(--pu)">02h00-04h00</span></div>
+      <div class="ref-item">London<span style="color:var(--bl)">09h00-11h00</span></div>
+      <div class="ref-item">NY (setup)<span style="color:var(--or)">15h00-17h00</span></div>
+      <div class="ref-item">Annonces US<span style="color:var(--rd)">14h30</span></div>
+    </div>
+    <div class="ref-card">
+      <div class="ref-card-t">Scoring V9</div>
+      <div class="ref-item">A+++ ≥40/50<span style="color:var(--gr)">1% · Trigger 2</span></div>
+      <div class="ref-item">A+ 30-39/50<span style="color:var(--g)">0.5%</span></div>
+      <div class="ref-item">Watchlist 20-29<span style="color:var(--or)">Attendre</span></div>
+      <div class="ref-item">NO TRADE &lt;20<span style="color:var(--rd)">Ignorer</span></div>
+    </div>
+    <div class="ref-card">
+      <div class="ref-card-t">Circuit Breaker</div>
+      <div class="ref-item">Max trades/KZ<span style="color:var(--rd)">2</span></div>
+      <div class="ref-item">Max trades/jour<span style="color:var(--rd)">3</span></div>
+      <div class="ref-item">SL consécutifs<span style="color:var(--rd)">2 → STOP</span></div>
+      <div class="ref-item">Perte journalière<span style="color:var(--rd)">3% → STOP</span></div>
+    </div>
+  </div>
+
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('pairs')">
+      <span class="pcard-icon">💱</span>
+      <span class="pcard-title">PAIRES & SESSIONS OPTIMALES</span>
+      <span class="pcard-toggle" id="toggle-pairs">▶</span>
+    </div>
+    <div class="pcard-body" id="body-pairs">
+      <table class="pair-table">
+        <thead><tr><th>Paire</th><th>Killzone principale</th><th>ATR M15</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>EURUSD</td><td><span class="badge-s badge-london">London</span></td><td>Auto TD</td><td>Majeure liquide</td></tr>
+          <tr><td>GBPUSD</td><td><span class="badge-s badge-london">London</span></td><td>Auto TD</td><td>Volatile London</td></tr>
+          <tr><td>USDJPY</td><td><span class="badge-s badge-asie">Asie</span></td><td>Auto TD</td><td>Actif la nuit</td></tr>
+          <tr><td>XAUUSD</td><td><span class="badge-s badge-london">London</span></td><td>MT5 manuel</td><td>DXY + US10Y</td></tr>
+          <tr><td>NAS100</td><td><span class="badge-s badge-ny">NY</span></td><td>MT5 manuel</td><td>Cash 15h30 FR</td></tr>
+          <tr><td>US30</td><td><span class="badge-s badge-ny">NY</span></td><td>MT5 manuel</td><td>Cash 15h30 FR</td></tr>
+          <tr><td>BTCUSD</td><td><span class="badge-s badge-ny">NY</span></td><td>Auto TD</td><td>24/7</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OUTILS -->
+  <div class="pcard">
+    <div class="pcard-hdr" onclick="toggleCard('tools')">
+      <span class="pcard-icon">🔧</span>
+      <span class="pcard-title">LIENS OUTILS</span>
+      <span class="pcard-toggle" id="toggle-tools">▶</span>
+    </div>
+    <div class="pcard-body" id="body-tools">
+      <div style="display:flex;flex-direction:column;gap:6px" id="tools-list">
+        <!-- injected by JS -->
+      </div>
+    </div>
+  </div>
+
+</div><!-- /reference -->
+
+</div><!-- /main -->
+<div class="foot">V9 Playbook · Apex Quant V9 · Données locales</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────
+const STEPS={
+  scan:[
+    {t:"EURUSD D1",d:"Prix proche d'un niveau fort ? High/Low récent, zone de support/résistance visible ?"},
+    {t:"XAUUSD D1",d:"Or : price action structurée ou mouvement erratique ? DXY en contre-tendance ?"},
+    {t:"GBPUSD D1",d:"Structure claire ou range sans direction ? London = prime time GBP"},
+    {t:"USDJPY D1",d:"Tendance DXY cohérente ? Yen actif surtout en session asiatique"},
+    {t:"NAS100 D1",d:"VIX bas ? Structure haussière ou correction ? Cash NY uniquement"},
+    {t:"US30 D1",d:"Même logique que NAS100. Surveille les résultats d'entreprises"},
+    {t:"BTCUSD D1",d:"Funding Rate + sentiment crypto. Actif 24/7 mais session NY optimale"},
+    {t:"USOIL D1",d:"EIA report mercredi ? Contexte OPEC ? Évite ±30min avant rapport"},
+  ],
+  short:[
+    {t:"Garde max 3 paires de ta shortlist",d:"Si plus de 3 paires semblent intéressantes → prends les 3 avec la structure la plus claire"},
+    {t:"Screenshot D1 de chaque paire retenue",d:"Timeframe : D1 · ATR(14) visible · Vue macro complète (3-6 mois)"},
+    {t:"Screenshot H4 de chaque paire retenue",d:"Timeframe : H4 · Structure récente · Zones Supply/Demand visibles"},
+    {t:"Note le prix actuel et ATR M15 depuis MT5",d:"Pour XAUUSD/NAS100/US30 : obligatoire depuis MT5 M15"},
+  ],
+  analyse:[
+    {t:"Ouvre le Project Trading Claude",d:"Nouveau chat ou chat session du jour"},
+    {t:"Lance l'outil semi-auto",d:"stokenway.github.io/apex-quant-v9/aq_v9_semiauto.html"},
+    {t:"Saisis ATR M15 + ATR Daily → Collecte",d:"Génère le bloc Module 0"},
+    {t:"Dans Claude : colle le bloc + screenshots D1 + H4",d:"Format : 'Scan soir — shortlist : [PAIRES] — Screenshots joints'"},
+    {t:"Claude te retourne biais + niveaux + conditions d'entrée",d:"Note les niveaux clés et les conditions précises pour chaque paire"},
+    {t:"Classe les 2-3 setups par probabilité",d:"Claude donne le score V9 et le grade pour chaque paire"},
+  ],
+  alertes:[
+    {t:"Ouvre TradingView sur la 1ère paire retenue",d:"Timeframe H4 ou M15"},
+    {t:"Identifie le niveau d'entrée exact",d:"Zone identifiée par Claude dans l'analyse"},
+    {t:"Clic droit sur le niveau → Add Alert",d:"Prix d'entrée · Notification mobile activée"},
+    {t:"Répète pour chaque paire de la shortlist",d:"Max 3 alertes ce soir"},
+    {t:"✅ Setup terminé — tu peux dormir",d:"Si l'alerte se déclenche demain → regarde le M15 → exécute le plan"},
+  ],
+  lon1:[
+    {t:"08h50 — Lance l'outil semi-auto",d:"Collecte F1/DXY/US10Y/F5 automatique"},
+    {t:"Note ATR M15 + ATR Daily sur MT5",d:"XAUUSD/NAS100/US30 : obligatoire depuis MT5"},
+    {t:"Ouvre le Project Trading Claude",d:"Nouveau chat session London"},
+    {t:"Vérifie le calendrier économique",d:"News High Impact dans les 30 prochaines minutes ?"},
+  ],
+  lon2:[
+    {t:"Colle le bloc Module 0 dans Claude",d:"+ screenshots D1 + H4 mis à jour"},
+    {t:"Claude confirme le biais et les niveaux",d:"Demande : 'analyse [PAIRE] @[prix]'"},
+    {t:"Attends le trigger M15",d:"SFP ou CHoCH M15 dans la zone identifiée"},
+    {t:"Si trigger confirmé → exécute depuis TradingView",d:"Bouton Trade → panneau ordre → Buy/Sell"},
+    {t:"Enregistre SL et TP dans l'ordre",d:"SL structurel · TP1 · TP2 selon plan V9"},
+    {t:"Passe en mode Phase 0 Gestion Position",d:"Voir onglet Position →"},
+  ],
+  ny1:[
+    {t:"13h45 — Lance l'outil semi-auto",d:"Collecte F1/DXY/US10Y/F5 automatique"},
+    {t:"Note ATR M15 + ATR Daily sur MT5",d:"XAUUSD/NAS100/US30 : obligatoire depuis MT5"},
+    {t:"Vérifie s'il y a des annonces à 14h30",d:"F1 le détecte automatiquement"},
+    {t:"Prépare l'analyse dans Claude",d:"Colle le bloc + screenshots"},
+  ],
+  ny2:[
+    {t:"14h00-14h30 — Attendre, pas d'entrée",d:"Volatilité pré-annonce non directionnelle → risque inutile"},
+    {t:"14h30 — Publication des annonces",d:"NFP / CPI / GDP / Jobless Claims selon le jour"},
+    {t:"14h30-15h00 — Digestion du marché",d:"Observe la réaction sans trader · Laisse la direction s'établir"},
+    {t:"Si F1 a bloqué → relance l'outil à 15h00",d:"Nouveau bloc avec F1 post-annonce"},
+  ],
+  ny3:[
+    {t:"15h00 — Analyse finale",d:"Colle le bloc mis à jour + screenshots H4 post-annonce"},
+    {t:"Claude confirme ou invalide le setup du soir",d:"La direction post-annonce peut changer le biais"},
+    {t:"Si trigger présent → exécute depuis TradingView",d:"SFP ou CHoCH M15 dans la zone"},
+    {t:"Enregistre SL et TP",d:"Sizing 0.25% si TRÈS VOLATILE · 1% si NORMAL"},
+    {t:"Ferme avant 17h00 si pas de setup clair",d:"Ne jamais rester en position pendant la nuit sans raison structurelle"},
+  ],
+  ph0:[
+    {t:"Trade ouvert → NE PAS TOUCHER AU SL",d:"Le SL est structurel. Le bruit de marché est normal. Absorbe."},
+    {t:"Surveille uniquement le prix vs TP1",d:"Pas de gestion active jusqu'à TP1"},
+    {t:"Time Stop : si +6 bougies M15 sans progression",d:"Si le prix n'avance pas vers TP1 → sortir à BE ou -0.3% max"},
+  ],
+  ph1:[
+    {t:"TP1 atteint → Ferme 40% de la position",d:"Dans TradingView : modifie le volume de la position"},
+    {t:"Déplace le SL au prix d'entrée (Break-Even)",d:"Immédiatement après fermeture des 40%"},
+    {t:"Le trade est maintenant risque-free",d:"Les 60% restants ne peuvent plus perdre"},
+  ],
+  ph2:[
+    {t:"TP2 atteint → Ferme 30% supplémentaires",d:"Il reste 30% de la position originale"},
+    {t:"Déplace le SL au niveau TP1",d:"Tu securises une partie du profit"},
+    {t:"Les 30% restants visent le Draw on Liquidity HTF",d:"Laisse courir avec trailing"},
+  ],
+  ph3:[
+    {t:"SL suit les swings M15",d:"Après chaque swing haut/bas M15 favorable → remonte le SL"},
+    {t:"Sortie si dernier swing M15 cassé",d:"Ne pas attendre le retour au TP2 si structure rompue"},
+    {t:"TP Ultimate = Draw on Liquidity HTF",d:"Identifié dans l'analyse initiale"},
+  ],
+  pm1:[
+    {t:"Capture le screenshot MT5 History",d:"Onglet History → tous les trades = clôturés"},
+    {t:"Ouvre le Project Trading Claude",d:"Tape : 'post_mortem'"},
+    {t:"Colle le bloc Module 0 + résultats du trade",d:"Claude génère l'analyse complète"},
+    {t:"Ouvre le V9 Journal",d:"stokenway.github.io/apex-quant-v9/v9_journal.html"},
+    {t:"Colle le bloc + post-mortem dans la zone de parsing",d:"Clique 'Extraire les données' → complète sortie + résultat"},
+    {t:"Enregistre le trade dans le journal",d:"Direction + P&L + WIN/LOSS/BE"},
+    {t:"Note 1 leçon apprise",d:"Optionnel mais précieux à long terme"},
+  ],
+};
+
+// ── INIT ──────────────────────────────────────────────────────────
+const KEY="v9pb_checks";
+let checks=JSON.parse(localStorage.getItem(KEY)||"{}");
+
+function save(){localStorage.setItem(KEY,JSON.stringify(checks))}
+
+function buildSteps(sectionId,stepsArr){
+  const el=document.getElementById(sectionId+"-steps");
+  if(!el)return;
+  el.innerHTML=stepsArr.map((s,i)=>{
+    const k=sectionId+"-"+i;
+    const done=checks[k]||false;
+    return`<div class="step ${done?"done":""}" id="step-${k}" onclick="toggleStep('${k}','${sectionId}',${stepsArr.length})">
+      <span class="step-n">${String(i+1).padStart(2,"0")}</span>
+      <span class="step-check">${done?"✓":""}</span>
+      <div class="step-content">
+        <div class="step-title">${s.t}</div>
+        ${s.d?`<div class="step-detail">${s.d}</div>`:""}
+      </div>
+    </div>`;
+  }).join("");
+  updateProgress(sectionId,stepsArr.length);
+}
+
+function toggleStep(k,sectionId,total){
+  checks[k]=!checks[k];save();
+  const el=document.getElementById("step-"+k);
+  if(checks[k]){el.classList.add("done");el.querySelector(".step-check").textContent="✓";}
+  else{el.classList.remove("done");el.querySelector(".step-check").textContent="";}
+  updateProgress(sectionId,total);
+}
+
+function updateProgress(sectionId,total){
+  const bar=document.getElementById(sectionId+"-bar");
+  const txt=document.getElementById(sectionId+"-prog");
+  if(!bar&&!txt)return;
+  const done=Object.keys(checks).filter(k=>k.startsWith(sectionId+"-")&&checks[k]).length;
+  const pct=Math.round(done/total*100);
+  if(bar)bar.style.width=pct+"%";
+  if(txt)txt.textContent=`${done}/${total} étapes complétées`;
+}
+
+function resetSection(sectionId){
+  Object.keys(checks).forEach(k=>{if(k.startsWith(sectionId+"-"))delete checks[k];});
+  save();
+  const steps=STEPS[sectionId];
+  if(steps)buildSteps(sectionId,steps);
+}
+
+// ── CARDS ─────────────────────────────────────────────────────────
+function toggleCard(id){
+  const body=document.getElementById("body-"+id);
+  const tog=document.getElementById("toggle-"+id);
+  if(!body)return;
+  const open=body.classList.toggle("open");
+  if(tog){tog.textContent=open?"▼":"▶";tog.classList.toggle("open",open);}
+}
+
+// ── TABS ──────────────────────────────────────────────────────────
+function showSection(id,btn){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("on"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
+  document.getElementById("s-"+id).classList.add("on");
+  btn.classList.add("on");
+}
+
+// ── TOOLS LINKS ───────────────────────────────────────────────────
+const TOOLS=[
+  {n:"Outil Semi-Auto V9",u:"https://stokenway.github.io/apex-quant-v9/aq_v9_semiauto.html"},
+  {n:"V9 Journal",u:"https://stokenway.github.io/apex-quant-v9/v9_journal.html"},
+  {n:"Command Center",u:"https://stokenway.github.io/command-center/command_center.html"},
+  {n:"TradingView",u:"https://tradingview.com"},
+  {n:"Myfxbook",u:"https://myfxbook.com"},
+  {n:"Financial Juice (news)",u:"https://financialjuice.com"},
+];
+
+function buildTools(){
+  const el=document.getElementById("tools-list");
+  if(!el)return;
+  el.innerHTML=TOOLS.map(t=>`
+    <a href="${t.u}" target="_blank" style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg3);border:1px solid var(--b1);color:var(--tx);text-decoration:none;font-family:var(--mono);font-size:10px;transition:border-color .1s"
+      onmouseover="this.style.borderColor='var(--g)'" onmouseout="this.style.borderColor='var(--b1)'">
+      <span>${t.n}</span>
+      <span style="color:var(--mu);font-size:9px">↗</span>
+    </a>`).join("");
+}
+
+// ── PROJECT LINK ──────────────────────────────────────────────────
+function loadProjLink(){
+  const saved=localStorage.getItem("aqv9_proj");
+  if(saved)document.getElementById("proj-link").href=saved;
+}
+
+// ── INIT ALL ──────────────────────────────────────────────────────
+window.onload=function(){
+  loadProjLink();
+  Object.entries(STEPS).forEach(([k,v])=>buildSteps(k,v));
+  buildTools();
+};
+</script>
+</body>
+</html>
