@@ -575,10 +575,18 @@ function doParse(){
   const pipM=txt.match(/([+-]?\d+\.?\d*)\s*pips?/i);
   if(pipM)pd.pips=parseFloat(pipM[1]);
 
-  // Outcome
-  if(txt.match(/\bWIN\b|✅\s*WIN/i))pd.outcome="WIN";
-  else if(txt.match(/\b(LOSS|SL touché)\b|❌\s*(SL|LOSS)/i))pd.outcome="LOSS";
-  else if(txt.match(/BREAK.?EVEN|➡️?\s*BE/i))pd.outcome="BE";
+  // Outcome — exige que le mot soit isolé sur sa propre ligne (évite les faux positifs
+  // si du texte parasite contenant accidentellement "win"/"loss" a été collé ailleurs)
+  if(txt.match(/^\s*✅?\s*WIN\s*$/im))pd.outcome="WIN";
+  else if(txt.match(/^\s*❌?\s*(LOSS|SL touché)\s*$/im))pd.outcome="LOSS";
+  else if(txt.match(/^\s*➡️?\s*BREAK.?EVEN\s*$/im)||txt.match(/^\s*➡️?\s*BE\s*$/im))pd.outcome="BE";
+  // Fallback plus permissif si rien trouvé en ligne isolée, mais seulement si le texte
+  // collé est raisonnablement court (sinon trop risqué de faux positif)
+  if(!pd.outcome&&txt.length<800){
+    if(txt.match(/\bWIN\b|✅\s*WIN/i))pd.outcome="WIN";
+    else if(txt.match(/\b(LOSS|SL touché)\b|❌\s*(SL|LOSS)/i))pd.outcome="LOSS";
+    else if(txt.match(/BREAK.?EVEN|➡️?\s*BE/i))pd.outcome="BE";
+  }
 
   // Tags LOSS — détecte "Tags LOSS : Faux CHoCH + Zone invalidée" ou liste libre
   const VALID_TAGS=["SL trop serré","Faux CHoCH","Hors killzone","News impact","Spread large","Forcing","Zone invalidée","Biais incorrect"];
