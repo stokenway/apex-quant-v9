@@ -565,6 +565,37 @@ function doParse(){
   else if(txt.match(/\b(LOSS|SL touché)\b|❌\s*(SL|LOSS)/i))pd.outcome="LOSS";
   else if(txt.match(/BREAK.?EVEN|➡️?\s*BE/i))pd.outcome="BE";
 
+  // Tags LOSS — détecte "Tags LOSS : Faux CHoCH + Zone invalidée" ou liste libre
+  const VALID_TAGS=["SL trop serré","Faux CHoCH","Hors killzone","News impact","Spread large","Forcing","Zone invalidée","Biais incorrect"];
+  pd.lossTags=[];
+  const tagLine=txt.match(/Tags?\s*LOSS\s*[:\-]\s*([^\n]+)/i);
+  if(tagLine){
+    VALID_TAGS.forEach(tag=>{
+      if(tagLine[1].toLowerCase().includes(tag.toLowerCase()))pd.lossTags.push(tag);
+    });
+  } else {
+    // Fallback : chercher les tags n'importe où dans le texte
+    VALID_TAGS.forEach(tag=>{
+      if(txt.toLowerCase().includes(tag.toLowerCase()))pd.lossTags.push(tag);
+    });
+  }
+
+  // Analyse LOSS — plusieurs stratégies de détection, du plus strict au plus permissif
+  pd.lossAnalysis=null;
+  // Stratégie 1 : après "Analyse :" ou "Analyse" suivi de ":" sur la même ligne ou ligne suivante
+  let anaM=txt.match(/Analyse\s*(?:du\s*trade\s*perdant)?\s*:?\s*\n+([\s\S]+)/i);
+  if(anaM&&anaM[1].trim())pd.lossAnalysis=anaM[1].trim();
+  // Stratégie 2 : capture directe à partir de "1. CONFIGURATION" peu importe ce qui précède
+  if(!pd.lossAnalysis){
+    const confM=txt.match(/(1\.\s*CONFIGURATION[\s\S]+)/i);
+    if(confM)pd.lossAnalysis=confM[1].trim();
+  }
+  // Stratégie 3 : capture à partir du premier "1." suivi d'un mot en majuscules (générique)
+  if(!pd.lossAnalysis){
+    const genM=txt.match(/(1\.\s*[A-ZÉÈÀÇ]{3,}[\s\S]+)/);
+    if(genM)pd.lossAnalysis=genM[1].trim();
+  }
+
   // Fill form
   const setFld=(id,v,fill=true)=>{const el=$(id);if(!el)return;if(v!=null&&v!==""){el.value=v;if(fill)el.classList.add("filled");}else{el.value="";el.classList.remove("filled");}};
   setFld("f-in",pd.entry);setFld("f-sl",pd.sl);setFld("f-out",pd.exit);
@@ -577,6 +608,17 @@ function doParse(){
   if(pd.session){const s=$("f-sess");for(let i=0;i<s.options.length;i++)if(s.options[i].value===pd.session){s.selectedIndex=i;break;}}
   if(pd.direction)setDir(pd.direction);
   if(pd.outcome)setOut(pd.outcome);
+
+  // Applique les tags LOSS détectés + remplit le textarea d'analyse
+  if(pd.outcome==="LOSS"&&pd.lossTags&&pd.lossTags.length){
+    lossTags=[...pd.lossTags];
+    document.querySelectorAll(".ltag").forEach(el=>{
+      el.classList.toggle("on",lossTags.includes(el.textContent.trim()));
+    });
+  }
+  if(pd.outcome==="LOSS"&&pd.lossAnalysis){
+    $("f-loss").value=pd.lossAnalysis;
+  }
 
   // Warn XAUUSD + Asie
   if(pd.pair==="XAUUSD"&&pd.session==="Asie"){$("pw").style.display="block";$("pw").textContent="⚠️ XAUUSD + Session Asie — Volume faible sur Or.";}
@@ -593,6 +635,10 @@ function doParse(){
   chk(pd.direction,"Direction");chk(pd.entry,"Entrée");chk(pd.sl,"SL");chk(pd.exit,"Sortie");
   chk(pd.lots?pd.lots+" lot":null,"Lots");
   chk(pd.pnl!=null?(pd.pnl>0?"+":"")+pd.pnl+"$":null,"P&L");chk(pd.outcome,"Résultat");
+  if(pd.outcome==="LOSS"){
+    chk(pd.lossTags&&pd.lossTags.length?pd.lossTags.join(", "):null,"Tags LOSS");
+    chk(pd.lossAnalysis?pd.lossAnalysis.length+" caractères détectés":null,"Analyse LOSS");
+  }
   $("po").style.display="block";
   $("po").innerHTML=`<span style="color:var(--gr)">${ok.join("\n")}</span>${warn.length?"\n"+'<span style="color:var(--or)">'+warn.join("\n")+"</span>":""}`;
   if(warn.length){$("pw").style.display="block";$("pw").textContent+=(pd.pair==="XAUUSD"&&pd.session==="Asie"?"\n":"")+"Complète manuellement les champs ⚠ ci-dessus.";}
