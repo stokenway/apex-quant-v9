@@ -568,6 +568,7 @@ function doParse(){
   setFld("f-pnl",pd.pnl);setFld("f-pips",pd.pips);
   setFld("f-lots",pd.lots,false);setFld("f-score",pd.score,false);
   if(pd.date)$("f-date").value=pd.date;
+  else $("f-date").value=new Date().toISOString().slice(0,10);
   if(pd.time)$("f-time").value=pd.time;
   if(pd.pair){const s=$("f-pair");for(let i=0;i<s.options.length;i++)if(s.options[i].value===pd.pair){s.selectedIndex=i;break;}}
   if(pd.session){const s=$("f-sess");for(let i=0;i<s.options.length;i++)if(s.options[i].value===pd.session){s.selectedIndex=i;break;}}
@@ -581,7 +582,10 @@ function doParse(){
   // Parse report
   const ok=[],warn=[];
   const chk=(v,l)=>{if(v!=null&&v!=="")ok.push(`✅ ${l} : ${v}`);else warn.push(`⚠ ${l} non détecté`);};
-  chk(pd.pair,"Paire");chk(pd.date,"Date");chk(pd.session,"Session");chk(pd.regime,"Régime");
+  chk(pd.pair,"Paire");
+  if(pd.date)ok.push(`✅ Date : ${pd.date}`);
+  else ok.push(`✅ Date : ${new Date().toISOString().slice(0,10)} (aujourd'hui, par défaut)`);
+  chk(pd.session,"Session");chk(pd.regime,"Régime");
   chk(pd.score?pd.score+"/50":null,"Score");chk(pd.grade,"Grade");chk(pd.trigger,"Trigger");
   chk(pd.direction,"Direction");chk(pd.entry,"Entrée");chk(pd.sl,"SL");chk(pd.exit,"Sortie");
   chk(pd.lots?pd.lots+" lot":null,"Lots");
