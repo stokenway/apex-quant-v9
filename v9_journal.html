@@ -288,6 +288,9 @@ Sortie : 4450.00 (TP atteint) · P&L : +55.71$ · WIN"></textarea>
 <!-- ÉTAPE 2 FORM -->
 <div class="sec form-sec" id="form-sec">
   <div class="sec-t">// Étape 2 — Vérifie, corrige si besoin, puis enregistre</div>
+  <div id="edit-banner" style="display:none;align-items:center;gap:8px;background:rgba(176,122,255,.08);border:1px solid rgba(176,122,255,.3);padding:8px 12px;margin-bottom:10px;font-family:var(--mono);font-size:10px;color:var(--pu)">
+    ✎ Mode édition — tu modifies un trade existant. Les changements remplaceront les données actuelles.
+  </div>
 
   <!-- Champs corrigeables -->
   <div class="row5">
@@ -398,7 +401,7 @@ Sortie : 4450.00 (TP atteint) · P&L : +55.71$ · WIN"></textarea>
   <div class="auto-box" id="auto-box">Données auto-parsées : —</div>
 
   <div class="save-row">
-    <button class="save-btn" onclick="doSave()">+ ENREGISTRER LE TRADE</button>
+    <button class="save-btn" onclick="doSave()"><span id="save-btn-label">+ ENREGISTRER LE TRADE</span></button>
     <button class="cancel-btn" onclick="doReset()">✕ Annuler</button>
   </div>
   <div class="save-err" id="save-err"></div>
@@ -454,7 +457,7 @@ const $=id=>document.getElementById(id);
 const KEY="v9j5",CKEY="v9j5cfg";
 let trades=[],filt="all",dir=null,out=null,pd={};
 let isForce=false,proto=[false,false,false],lossTags=[];
-let activeRec=null;
+let activeRec=null,editingId=null;
 
 // ── TOAST ───────────────────────────────────────────────
 function toast(msg,err=false,dur=2200){
@@ -735,7 +738,7 @@ function doSave(){
   if(pip&&lots)pipValPerPip=Math.round(pip*(lots/0.01)*1000)/1000;
 
   const t={
-    id:"t"+Date.now(),date,time,pair,direction:dir,session:sess,
+    id:editingId||("t"+Date.now()),date,time,pair,direction:dir,session:sess,
     entry,sl,exit,lots,pnl,pips,rr,riskPct,pipValPerPip,
     regime:pd.regime||"—",score,grade:pd.grade||null,
     trigger:pd.trigger||null,atrM15:pd.atrM15||null,outcome:out,
@@ -744,10 +747,18 @@ function doSave(){
     lesson:$("f-les").value.trim(),
     notes:$("f-not").value.trim(),
     convLink:$("f-link").value.trim(),
-    isNew:true
+    isNew:!editingId
   };
-  trades.unshift(t);saveTrades();
-  toast(`✅ Trade ${pair} ${out} enregistré`);
+  if(editingId){
+    const idx=trades.findIndex(x=>x.id===editingId);
+    if(idx>=0)trades[idx]=t;
+    else trades.unshift(t);
+    toast(`✎ Trade ${pair} mis à jour`);
+  } else {
+    trades.unshift(t);
+    toast(`✅ Trade ${pair} ${out} enregistré`);
+  }
+  saveTrades();
   doReset();render();
   // Remove new flag after animation
   setTimeout(()=>{const idx=trades.findIndex(x=>x.id===t.id);if(idx>=0){trades[idx].isNew=false;}},1000);
@@ -759,6 +770,9 @@ function doReset(){
   ["po","pw","save-err","calc-box","recall-box"].forEach(id=>{const e=$(id);if(e)e.style.display="none";});
   $("form-sec").style.display="none";
   $("loss-guide").style.display="none";
+  $("edit-banner").style.display="none";
+  $("save-btn-label").textContent="+ ENREGISTRER LE TRADE";
+  editingId=null;
   ["f-in","f-sl","f-out","f-pnl","f-pips","f-lots","f-score","f-link","f-loss","f-not","f-les"].forEach(id=>{
     const el=$(id);if(!el)return;el.value="";el.classList.remove("filled");
   });
@@ -1003,6 +1017,7 @@ function renderCards(arr){
         ${t.lesson?`<div class="lb">💡 ${t.lesson}</div>`:""}
         ${t.convLink?`<a class="conv-link" href="${t.convLink}" target="_blank">🔗 Voir analyse dans Claude</a>`:""}
         <div class="da">
+          <button class="edit-note-btn" onclick="editTrade('${t.id}')">✎ Modifier</button>
           <button class="dup-btn" onclick="dupTrade('${t.id}')">⧉ Dupliquer</button>
           <button onclick="delTrade('${t.id}')">🗑 Supprimer</button>
         </div>
@@ -1017,6 +1032,41 @@ function delTrade(id){
   if(!confirm(`Supprimer ce trade ${t?t.pair:""} ?`))return;
   trades=trades.filter(x=>x.id!==id);saveTrades();render();
   toast("Trade supprimé.");
+}
+function editTrade(id){
+  const t=trades.find(x=>x.id===id);if(!t)return;
+  editingId=id;
+  pd={regime:t.regime,score:t.score,grade:t.grade,trigger:t.trigger,atrM15:t.atrM15};
+  $("f-pair").value=t.pair&&t.pair!=="—"?t.pair:"";
+  $("f-sess").value=t.session&&t.session!=="—"?t.session:"";
+  $("f-date").value=t.date||"";
+  $("f-time").value=t.time||"";
+  $("f-link").value=t.convLink||"";
+  const setFld=(id,v)=>{const el=$(id);if(!el)return;if(v!=null&&v!==""){el.value=v;el.classList.add("filled");}else{el.value="";el.classList.remove("filled");}};
+  setFld("f-in",t.entry);setFld("f-sl",t.sl);setFld("f-out",t.exit);
+  setFld("f-pnl",t.pnl);setFld("f-pips",t.pips);
+  $("f-lots").value=t.lots||"";
+  $("f-score").value=t.score||"";
+  setDir(t.direction);
+  setOut(t.outcome);
+  proto=[...(t.proto||[false,false,false])];
+  [0,1,2].forEach(i=>$("pc"+(i+1)).classList.toggle("on",proto[i]));
+  isForce=!!t.isForce;$("b-force").className=isForce?"on-force":"";
+  lossTags=[...(t.lossTags||[])];
+  document.querySelectorAll(".ltag").forEach(el=>{
+    const tag=el.textContent.trim();
+    el.classList.toggle("on",lossTags.includes(tag));
+  });
+  $("f-loss").value=t.lossAnalysis||"";
+  $("f-not").value=t.notes||"";
+  $("f-les").value=t.lesson||"";
+  $("po").style.display="none";$("pw").style.display="none";
+  $("save-err").style.display="none";
+  $("save-btn-label").textContent="✎ METTRE À JOUR LE TRADE";
+  $("edit-banner").style.display="flex";
+  $("form-sec").style.display="block";
+  liveCalc();
+  $("form-sec").scrollIntoView({behavior:"smooth",block:"start"});
 }
 function dupTrade(id){
   const t=trades.find(x=>x.id===id);if(!t)return;
