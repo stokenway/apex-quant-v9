@@ -61,6 +61,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--tx);min-height:100
 .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .row5{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.row6{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .fld label{display:block;font-family:var(--mono);font-size:8px;color:var(--tx2);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
 .fld input,.fld select,.fld textarea{width:100%;background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:7px 8px;font-family:var(--mono);font-size:11px;outline:none;transition:border .15s;-webkit-appearance:none}
 .fld select option{background:var(--bg2);color:var(--tx)}
@@ -161,6 +162,8 @@ canvas{width:100%;height:100%;display:block}
 .fb{background:transparent;border:1px solid var(--b2);color:var(--tx2);padding:4px 10px;font-family:var(--mono);font-size:9px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:all .15s}
 .fb:hover{border-color:var(--gd);color:var(--g)}
 .fb.on{border-color:var(--g);background:var(--gl);color:var(--g)}
+.acc-filter{background:var(--bg);border:1px solid var(--b2);color:var(--tx2);padding:4px 8px;font-family:var(--mono);font-size:9px;outline:none;cursor:pointer;-webkit-appearance:none}
+.acc-filter:focus{border-color:var(--g)}
 .search-wrap{margin-left:auto;display:flex;align-items:center;gap:5px}
 .search-inp{background:var(--bg);border:1px solid var(--b2);color:var(--tx);padding:5px 9px;font-family:var(--mono);font-size:9px;outline:none;width:130px;transition:border .15s}
 .search-inp:focus{border-color:var(--g)}
@@ -189,6 +192,7 @@ canvas{width:100%;height:100%;display:block}
 .tg-force{color:var(--pu);border-color:rgba(176,122,255,.35)}
 .tg-warn{color:var(--or);border-color:rgba(255,140,42,.35)}
 .tg-grade{color:var(--be);border-color:rgba(255,229,102,.3)}
+.tg-account{color:var(--bl);border-color:rgba(90,175,255,.3);background:rgba(90,175,255,.04)}
 .tg-loss-tag{color:#ff8888;border-color:rgba(255,136,136,.3)}
 .tc-time{font-family:var(--mono);font-size:9px;color:var(--mu)}
 .tc-pnl{margin-left:auto;text-align:right;flex-shrink:0}
@@ -223,7 +227,7 @@ canvas{width:100%;height:100%;display:block}
 
 @media(max-width:620px){
   .stats-grid{grid-template-columns:repeat(3,1fr)}
-  .row3,.row4,.row5{grid-template-columns:1fr 1fr}
+  .row3,.row4,.row5,.row6{grid-template-columns:1fr 1fr}
   .dg,.dg2{grid-template-columns:1fr 1fr}
   .analytics{grid-template-columns:1fr}
   .hdr-stats{gap:10px}
@@ -293,7 +297,11 @@ Sortie : 4450.00 (TP atteint) · P&L : +55.71$ · WIN"></textarea>
   </div>
 
   <!-- Champs corrigeables -->
-  <div class="row5">
+  <div class="row6">
+    <div class="fld"><label>Compte</label>
+      <input type="text" id="f-account" list="account-list" placeholder="ex: Eightcap-Live">
+      <datalist id="account-list"></datalist>
+    </div>
     <div class="fld"><label>Paire</label>
       <select id="f-pair">
         <option value="">— sélectionner —</option>
@@ -442,6 +450,9 @@ Sortie : 4450.00 (TP atteint) · P&L : +55.71$ · WIN"></textarea>
   <button class="fb" onclick="setF('London',this)">London</button>
   <button class="fb" onclick="setF('NY',this)">NY</button>
   <button class="fb" onclick="setF('FORCE',this)">⚠️ Forcing</button>
+  <select class="acc-filter" id="acc-filter" onchange="setAccFilter(this.value)">
+    <option value="">Tous les comptes</option>
+  </select>
   <div class="search-wrap">
     <input class="search-inp" id="search-inp" placeholder="Paire…" oninput="render()">
     <button class="xb" onclick="clearSearch()">×</button>
@@ -455,7 +466,7 @@ Sortie : 4450.00 (TP atteint) · P&L : +55.71$ · WIN"></textarea>
 <script>
 const $=id=>document.getElementById(id);
 const KEY="v9j5",CKEY="v9j5cfg";
-let trades=[],filt="all",dir=null,out=null,pd={};
+let trades=[],filt="all",accFilter="",dir=null,out=null,pd={};
 let isForce=false,proto=[false,false,false],lossTags=[];
 let activeRec=null,editingId=null;
 
@@ -527,6 +538,10 @@ function doParse(){
   // Session
   const sM=txt.match(/F2 PASS\s*[—–-]\s*(London|NY|Asie)/i)||txt.match(/Session\s*[:\-]\s*(London|NY|Asie)/i);
   if(sM)pd.session=sM[1];
+
+  // Compte
+  const accM=txt.match(/Compte\s*[:\-]\s*([^\n]+)/i);
+  if(accM)pd.account=accM[1].trim();
 
   // Score + grade
   const scM=txt.match(/(?:Total|Score)\s*:?\s*\*{0,2}(\d+)\s*\/\s*50/i);
@@ -606,6 +621,7 @@ function doParse(){
   if(pd.time)$("f-time").value=pd.time;
   if(pd.pair){const s=$("f-pair");for(let i=0;i<s.options.length;i++)if(s.options[i].value===pd.pair){s.selectedIndex=i;break;}}
   if(pd.session){const s=$("f-sess");for(let i=0;i<s.options.length;i++)if(s.options[i].value===pd.session){s.selectedIndex=i;break;}}
+  if(pd.account)$("f-account").value=pd.account;
   if(pd.direction)setDir(pd.direction);
   if(pd.outcome)setOut(pd.outcome);
 
@@ -764,6 +780,7 @@ function doSave(){
   const lots=cn($("f-lots").value)||pd.lots||null;
   const pair=$("f-pair").value||pd.pair||"—";
   const sess=$("f-sess").value||pd.session||"—";
+  const account=$("f-account").value.trim()||pd.account||"—";
   const date=$("f-date").value||pd.date||new Date().toISOString().slice(0,10);
   const time=$("f-time").value||pd.time||"";
   const score=cn($("f-score").value)||pd.score||null;
@@ -784,7 +801,7 @@ function doSave(){
   if(pip&&lots)pipValPerPip=Math.round(pip*(lots/0.01)*1000)/1000;
 
   const t={
-    id:editingId||("t"+Date.now()),date,time,pair,direction:dir,session:sess,
+    id:editingId||("t"+Date.now()),date,time,pair,direction:dir,session:sess,account,
     entry,sl,exit,lots,pnl,pips,rr,riskPct,pipValPerPip,
     regime:pd.regime||"—",score,grade:pd.grade||null,
     trigger:pd.trigger||null,atrM15:pd.atrM15||null,outcome:out,
@@ -823,7 +840,7 @@ function doReset(){
     const el=$(id);if(!el)return;el.value="";el.classList.remove("filled");
   });
   ["f-date","f-time"].forEach(id=>{const el=$(id);if(el)el.value="";});
-  $("f-pair").selectedIndex=0;$("f-sess").selectedIndex=0;
+  $("f-pair").selectedIndex=0;$("f-sess").selectedIndex=0;$("f-account").value="";
   pd={};dir=null;out=null;isForce=false;proto=[false,false,false];lossTags=[];
   setDir(null);setOut(null);$("b-force").className="";
   [0,1,2].forEach(i=>{$("pc"+(i+1)).classList.remove("on");});
@@ -835,6 +852,7 @@ function doReset(){
 // ── IMPORT CSV ──────────────────────────────────────────
 function importCSV(input){
   const file=input.files[0];if(!file)return;
+  const accName=prompt("Nom du compte pour cet import (ex: Eightcap-Live) — laisse vide si non applicable :","")||"—";
   const reader=new FileReader();
   reader.onload=e=>{
     const lines=e.target.result.split("\n").filter(l=>l.trim());
@@ -859,7 +877,7 @@ function importCSV(input){
       const date=openTime.slice(0,10)||new Date().toISOString().slice(0,10);
       const id="csv_"+Date.now()+"_"+i;
       if(trades.find(t=>t.entry===entry&&t.date===date&&t.pair===pair))continue;
-      trades.push({id,date,time:"",pair,direction,session:"—",entry,sl:null,exit,lots,pnl,pips:null,rr:null,riskPct:null,pipValPerPip:null,regime:"—",score:null,grade:null,trigger:null,atrM15:null,outcome,isForce:false,proto:[false,false,false],lossTags:[],lossAnalysis:"",lesson:"",notes:"⚙️ Importé CSV",convLink:""});
+      trades.push({id,date,time:"",pair,direction,session:"—",account:accName,entry,sl:null,exit,lots,pnl,pips:null,rr:null,riskPct:null,pipValPerPip:null,regime:"—",score:null,grade:null,trigger:null,atrM15:null,outcome,isForce:false,proto:[false,false,false],lossTags:[],lossAnalysis:"",lesson:"",notes:"⚙️ Importé CSV",convLink:""});
       imported++;
     }
     if(imported>0){saveTrades();render();toast(`${imported} trade(s) importé(s) depuis CSV ✅`);}
@@ -1027,6 +1045,7 @@ function renderCards(arr){
     return`<div class="tc ${(t.outcome||"").toLowerCase()}${t.isNew?" new-trade":""}">
       <div class="tc-h" onclick="toggleCard('${t.id}')">
         <span class="tc-outcome">${outcomeIcon(t.outcome)}</span>
+        ${t.account&&t.account!=="—"?`<span class="tag tg-account">${t.account}</span>`:""}
         <span class="tc-pair">${t.pair||"—"}</span>
         <span class="tag ${t.direction==="LONG"?"tg-l":"tg-s"}">${t.direction||"—"}</span>
         ${t.regime&&t.regime!=="—"?`<span class="tag ${regCls(t.regime)}">${t.regime}</span>`:""}
@@ -1085,6 +1104,7 @@ function editTrade(id){
   pd={regime:t.regime,score:t.score,grade:t.grade,trigger:t.trigger,atrM15:t.atrM15};
   $("f-pair").value=t.pair&&t.pair!=="—"?t.pair:"";
   $("f-sess").value=t.session&&t.session!=="—"?t.session:"";
+  $("f-account").value=t.account&&t.account!=="—"?t.account:"";
   $("f-date").value=t.date||"";
   $("f-time").value=t.time||"";
   $("f-link").value=t.convLink||"";
@@ -1118,6 +1138,7 @@ function dupTrade(id){
   const t=trades.find(x=>x.id===id);if(!t)return;
   $("paste").value=[
     `Duplication — ${t.pair} ${t.direction}`,
+    t.account&&t.account!=="—"?`Compte : ${t.account}`:"",
     t.regime&&t.regime!=="—"?`Régime : ${t.regime}`:"",
     t.session&&t.session!=="—"?`Session : ${t.session}`:"",
     t.score?`Score : ${t.score}/50`:"",
@@ -1139,8 +1160,8 @@ function clearSearch(){$("search-inp").value="";render();}
 // ── CSV EXPORT ───────────────────────────────────────────
 function doCSV(){
   if(!trades.length){toast("Aucun trade à exporter.",true);return;}
-  const h="Date,Heure,Paire,Direction,Session,Entrée,SL,Sortie,Lots,Pips,PnL($),RR,% Capital,Pip Value,Régime,Score,Grade,Trigger,Résultat,Forcing,Zone,TP1,SL-BE,Loss Tags";
-  const rows=trades.map(t=>[t.date,t.time,t.pair,t.direction,t.session,t.entry,t.sl,t.exit,t.lots,t.pips,t.pnl,t.rr,t.riskPct,t.pipValPerPip,t.regime,t.score,t.grade,t.trigger,t.outcome,t.isForce?"OUI":"NON",...(t.proto||[false,false,false]).map(v=>v?"OUI":"NON"),(t.lossTags||[]).join("|")].join(","));
+  const h="Compte,Date,Heure,Paire,Direction,Session,Entrée,SL,Sortie,Lots,Pips,PnL($),RR,% Capital,Pip Value,Régime,Score,Grade,Trigger,Résultat,Forcing,Zone,TP1,SL-BE,Loss Tags";
+  const rows=trades.map(t=>[t.account,t.date,t.time,t.pair,t.direction,t.session,t.entry,t.sl,t.exit,t.lots,t.pips,t.pnl,t.rr,t.riskPct,t.pipValPerPip,t.regime,t.score,t.grade,t.trigger,t.outcome,t.isForce?"OUI":"NON",...(t.proto||[false,false,false]).map(v=>v?"OUI":"NON"),(t.lossTags||[]).join("|")].join(","));
   const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([[h,...rows].join("\n")],{type:"text/csv;charset=utf-8;"}));
   a.download=`v9_journal_${new Date().toISOString().slice(0,10)}.csv`;a.click();
@@ -1153,8 +1174,27 @@ function render(){
   let arr=trades;
   if(filt==="FORCE")arr=trades.filter(t=>t.isForce);
   else if(filt!=="all")arr=trades.filter(t=>t.outcome===filt||t.session===filt);
+  if(accFilter)arr=arr.filter(t=>t.account===accFilter);
   if(q)arr=arr.filter(t=>(t.pair||"").includes(q));
   renderStats(arr);renderCards(arr);drawEquity();renderAnalytics();
+  updateAccountLists();
+}
+
+function setAccFilter(v){accFilter=v;render();}
+
+function updateAccountLists(){
+  const accounts=[...new Set(trades.map(t=>t.account).filter(a=>a&&a!=="—"))].sort();
+  // Datalist pour le champ texte du formulaire
+  const dl=$("account-list");
+  if(dl)dl.innerHTML=accounts.map(a=>`<option value="${a}"></option>`).join("");
+  // Select de filtre — préserve la sélection actuelle si toujours valide
+  const sel=$("acc-filter");
+  if(sel){
+    const current=sel.value;
+    sel.innerHTML='<option value="">Tous les comptes</option>'+accounts.map(a=>`<option value="${a}">${a}</option>`).join("");
+    if(accounts.includes(current))sel.value=current;
+    else if(current&&!accounts.includes(current)){accFilter="";}
+  }
 }
 
 window.onload=function(){loadCfg();loadTrades();render();};
