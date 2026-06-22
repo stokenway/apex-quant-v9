@@ -773,7 +773,7 @@ function doSave(){
   const missing=[];
   if(!dir)missing.push("Direction (LONG/SHORT)");
   if(!out)missing.push("Résultat (WIN/LOSS/BE)");
-  const entry=cn($("f-in").value)||pd.entry||null;
+  const entry=cn($("f-in").value)||(editingId?null:pd.entry)||null;
   if(!entry)missing.push("Prix d'entrée");
   if(missing.length){
     err.style.display="block";
@@ -782,17 +782,20 @@ function doSave(){
     return;
   }
   err.style.display="none";
-  const sl=cn($("f-sl").value)||pd.sl||null;
-  const exit=cn($("f-out").value)||pd.exit||null;
-  const pnl=cn($("f-pnl").value)||pd.pnl||null;
-  const lots=cn($("f-lots").value)||pd.lots||null;
-  const pair=$("f-pair").value||pd.pair||"—";
-  const sess=$("f-sess").value||pd.session||"—";
-  const account=$("f-account").value.trim()||pd.account||"—";
-  const date=$("f-date").value||pd.date||new Date().toISOString().slice(0,10);
-  const time=$("f-time").value||pd.time||"";
-  const score=cn($("f-score").value)||pd.score||null;
-  let pips=cn($("f-pips").value)||pd.pips||null;
+  // En mode édition, pd peut contenir des données obsolètes du dernier parsing
+  // (ex: un autre trade collé juste avant). On ne s'appuie sur pd que si on N'EST PAS en édition.
+  const fallback=editingId?{}:pd;
+  const sl=cn($("f-sl").value)||fallback.sl||null;
+  const exit=cn($("f-out").value)||fallback.exit||null;
+  const pnl=cn($("f-pnl").value)??fallback.pnl??null;
+  const lots=cn($("f-lots").value)||fallback.lots||null;
+  const pair=$("f-pair").value||fallback.pair||"—";
+  const sess=$("f-sess").value||fallback.session||"—";
+  const account=$("f-account").value.trim()||fallback.account||"—";
+  const date=$("f-date").value||fallback.date||new Date().toISOString().slice(0,10);
+  const time=$("f-time").value||fallback.time||"";
+  const score=cn($("f-score").value)||fallback.score||null;
+  let pips=cn($("f-pips").value)||fallback.pips||null;
   if(!pips&&entry&&exit){
     const pr=pair.toUpperCase();
     const isMetal=["XAUUSD","XAGUSD","USOIL","NAS100","US30","SPX500","GER40"].some(x=>pr.includes(x));
